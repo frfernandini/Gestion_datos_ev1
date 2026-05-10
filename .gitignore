@@ -1,0 +1,12 @@
+# Carpeta de datos generados
+datos/
+_pycache_/
+#datos generados
+datos_preprocesados.csv
+# Archivos de logs
+*.log
+*.pyc
+
+# Entornos virtuales (opcional, si creaste uno)
+venv/
+.venv/
