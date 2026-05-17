@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 import pandas as pd
 import joblib
 import logging
@@ -25,7 +25,37 @@ except Exception as e:
 
 # 3. Crear el endpoint (URL) para hacer predicciones
 @app.post("/predecir")
-def predecir_fraude(datos_transaccion: dict):
+def predecir_fraude(datos_transaccion: dict = Body(
+    ...,
+        example={
+            "amt": 45.50,
+            "gender": 1,
+            "city_pop": 120500,
+            "unix_time": 1371816893,
+            "flag_invalid_amt": 0,
+            "flag_fake_location": 0,
+            "trans_hour": 14,
+            "trans_day_of_week": 3,
+            "trans_month": 10,
+            "age": 34,
+            "distance_km": 12.4,
+            "category_food_dining": 1,
+            "category_gas_transport": 0,
+            "category_grocery_net": 0,
+            "category_grocery_pos": 0,
+            "category_health_fitness": 0,
+            "category_home": 0,
+            "category_kids_pets": 0,
+            "category_misc_net": 0,
+            "category_misc_pos": 0,
+            "category_personal_care": 0,
+            "category_shopping_net": 0,
+            "category_shopping_pos": 0,
+            "category_travel": 0
+        }
+    )
+    ):
+    
     if modelo is None:
         raise HTTPException(status_code=500, detail="El modelo no está disponible.")
     
