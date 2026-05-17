@@ -3,10 +3,11 @@ datos/
 _pycache_/
 #datos generados
 datos_preprocesados.csv
+datos_rechazados.csv
 # Archivos de logs
 *.log
 *.pyc
-datos_rechazados.csv
+
 # Entornos virtuales (opcional, si creaste uno)
 venv/
 .venv/

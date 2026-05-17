@@ -1,0 +1,14 @@
+name: Construir Imagen Docker
+
+on:
+  push:
+    branches:
+      - main #se ejecutra cuando se hace push a la rama main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v3
+      - name: Construir la imagen de docker
+        run: docker build -t app .

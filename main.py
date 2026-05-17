@@ -6,11 +6,13 @@ from ingesta import ingestar_datos_csv
 from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
-
+from carga_datos import cargar_datos_supabase
 # ==========================================
 # CONFIGURACIÓN CENTRALIZADA DE LOGS
 # ==========================================
 # 1. Guardar en un archivo de texto
+
+URL_SUPABASE = "postgresql://postgres.bcdfoultzlgkmucgvdct:Fernandini810.@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
 logging.basicConfig(
     filename='ejecucion_pipeline.log', 
     level=logging.INFO,
@@ -51,6 +53,8 @@ def ejecutar_pipeline():
             
             # (Opcional) Paso 5: Exportar el resultado final para dárselo al modelo
             df_transformado.to_csv('datos_preprocesados.csv', index=False)
+            
+            exito = cargar_datos_supabase(df_transformado, "transacciones_ml_procesadas", URL_SUPABASE)
             logging.info("Dataset final exportado a 'datos_preprocesados.csv'")
             
             logging.info("="*60)
