@@ -1,12 +1,24 @@
-# Carpeta de datos generados
-datos/
-_pycache_/
-#datos generados
-datos_preprocesados.csv
-# Archivos de logs
-*.log
-*.pyc
-datos_rechazados.csv
-# Entornos virtuales (opcional, si creaste uno)
+# Entornos virtuales
 venv/
 .venv/
+env/
+.env
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Datos generados por el pipeline (no deben ir al repo)
+datos_preprocesados.csv
+datos_rechazados.csv
+
+# Opcional: Si el archivo 02_fraudTest.csv es muy pesado, deberías ignorarlo. 
+# Si es un archivo de prueba pequeño, puedes omitir esta línea.
+# datos/*.csv
+
+# Logs
+*.log
+
+# Archivos del sistema
+.DS_Store

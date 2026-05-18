@@ -1,13 +1,25 @@
-# Carpeta de datos generados
-datos/
-_pycache_/
-#datos generados
-datos_preprocesados.csv
-datos_rechazados.csv
-# Archivos de logs
-*.log
+__pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 
-# Entornos virtuales (opcional, si creaste uno)
+# Archivos de Git y configuración
+.git/
+.gitignore
+.dockerignore
+
+
+README.md
+
+# Documentos generados / Datos
+datos_preprocesados.csv
+datos_rechazados.csv
+datos/ 
+
+# Entornos virtuales
 venv/
 .venv/
+.env
+
+# Archivos de logs
+*.log
