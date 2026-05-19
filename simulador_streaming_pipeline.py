@@ -10,7 +10,7 @@ from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
 # Como FastAPI y Streamlit ahora comparten la máquina, se hablan internamente
-API_URL = "http://localhost:8000/predecir"
+API_URL = "http://localhost:8001/predecir"
 
 # 🔴 Lista de TODAS las columnas que tu modelo entrenado espera
 COLUMNAS_ESPERADAS = [
