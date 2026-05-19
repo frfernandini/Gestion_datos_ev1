@@ -23,8 +23,9 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
         'trans_date_trans_time', 'cc_num', 'merchant', 'category', 'amt', 
         'first', 'last', 'gender', 'street', 'city', 'state', 'zip', 
         'lat', 'long', 'city_pop', 'job', 'dob', 'trans_num', 'unix_time', 
-        'merch_lat', 'merch_long', 'is_fraud'
+        'merch_lat', 'merch_long'
     ]
+    # NOTA: 'is_fraud' se removió de la lista estricta porque en streaming (inferencia) no existirá.
     
     columnas_faltantes = [col for col in columnas_esperadas if col not in df_valido.columns]
     
@@ -48,13 +49,14 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
         # Neutralizamos el valor pasándolo a nulo para que limpieza lo trate
         df_valido.loc[idx_monto_invalido, 'amt'] = pd.NA
 
-    # Regla B: La variable objetivo (is_fraud) debe ser 0 o 1.
-    # Esta variable SÍ debemos filtrarla si está mala, porque no podemos entrenar a un modelo si no sabemos si fue fraude o no.
-    filas_antes = df_valido.shape[0]
-    df_valido = df_valido[df_valido['is_fraud'].isin([0, 1])]
-    target_eliminados = filas_antes - df_valido.shape[0]
-    if target_eliminados > 0:
-        logger.warning(f"Se eliminaron {target_eliminados} registros porque la etiqueta 'is_fraud' no era 0 ni 1 (No sirven para entrenar).")
+    # Regla B: La variable objetivo (is_fraud). 
+    # Solo la validamos si viene en los datos (es decir, en entrenamiento). En streaming puede no venir o venir nula.
+    if 'is_fraud' in df_valido.columns:
+        filas_antes = df_valido.shape[0]
+        df_valido = df_valido[df_valido['is_fraud'].isin([0, 1]) | df_valido['is_fraud'].isna()]
+        target_eliminados = filas_antes - df_valido.shape[0]
+        if target_eliminados > 0:
+            logger.warning(f"Se eliminaron {target_eliminados} registros porque la etiqueta 'is_fraud' no era 0 ni 1 (No sirven para entrenar).")
 
     # Regla C: Coordenadas planetarias (Lat: -90 a 90 | Long: -180 a 180)
     df_valido['flag_fake_location'] = 0

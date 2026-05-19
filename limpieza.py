@@ -23,6 +23,9 @@ def limpiar_datos(df: pd.DataFrame) -> pd.DataFrame:
     if 'cc_num' in df_clean.columns:
         df_clean['cc_num'] = df_clean['cc_num'].astype(str)
         logger.info("Columna de tarjetas 'cc_num' convertida a formato texto.")
+    if 'zip' in df_clean.columns:
+        df_clean['zip'] = df_clean['zip'].astype(str)
+        logger.info("Columna 'zip' convertida a formato texto.")
         
     if 'trans_date_trans_time' in df_clean.columns:
         df_clean['trans_date_trans_time'] = pd.to_datetime(df_clean['trans_date_trans_time'], errors='coerce')

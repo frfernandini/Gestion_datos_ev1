@@ -61,6 +61,8 @@ if archivo_subido is not None:
             if detener:
                 break
             
+            inicio_latencia = time.time()
+            
             # --- 1. PASAMOS LA FILA ÚNICA POR EL PIPELINE ---
             df_evento = pd.DataFrame([fila])
             
@@ -90,11 +92,15 @@ if archivo_subido is not None:
                     data_api = res.json()
                     estado = "🚨 FRAUDE" if data_api["es_fraude"] else "✅ OK"
                     
+                    fin_latencia = time.time()
+                    latencia = round(fin_latencia - inicio_latencia, 3)
+                    
                     st.session_state.historial.insert(0, {
                         "ID": index,
                         "Monto ($)": round(fila.get('amt', 0), 2),
                         "Categoría": fila.get('category', 'N/A'),
                         "Distancia (km)": round(df_final.iloc[0]['distance_km'], 1),
+                        "Latencia (s)": latencia,
                         "Predicción": estado
                     })
                     
@@ -109,10 +115,12 @@ if archivo_subido is not None:
                 
             # --- 3. ACTUALIZAR DASHBOARD ---
             fraudes = sum(1 for item in st.session_state.historial if "FRAUDE" in item["Predicción"])
+            latencia_actual = st.session_state.historial[0]["Latencia (s)"] if st.session_state.historial else 0
             with metricas_placeholder.container():
-                kpi1, kpi2 = st.columns(2)
+                kpi1, kpi2, kpi3 = st.columns(3)
                 kpi1.metric("Transacciones Evaluadas", len(st.session_state.historial))
                 kpi2.metric("Fraudes Detectados", fraudes)
+                kpi3.metric("Latencia pipeline + API (s)", f"{latencia_actual}s")
                 
             with tabla_placeholder.container():
                 st.dataframe(pd.DataFrame(st.session_state.historial), use_container_width=True, hide_index=True)
