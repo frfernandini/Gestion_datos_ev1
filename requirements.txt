@@ -6,3 +6,4 @@ lightgbm
 joblib
 streamlit
 requests
+python-dotenv

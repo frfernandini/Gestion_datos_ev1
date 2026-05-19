@@ -7,12 +7,18 @@ from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 from carga_datos import cargar_datos_supabase
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
+
 # ==========================================
 # CONFIGURACIÓN CENTRALIZADA DE LOGS
 # ==========================================
 # 1. Guardar en un archivo de texto
 
-URL_SUPABASE = "postgresql://postgres.bcdfoultzlgkmucgvdct:Fernandini810.@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+URL_SUPABASE = os.getenv("SUPABASE_URL")
 logging.basicConfig(
     filename='ejecucion_pipeline.log', 
     level=logging.INFO,
