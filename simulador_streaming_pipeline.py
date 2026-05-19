@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import requests
 import time
@@ -8,10 +9,10 @@ from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
-API_URL = "https://gestion-datos-ev1.onrender.com/predecir" 
+# Como FastAPI y Streamlit ahora comparten la máquina, se hablan internamente
+API_URL = "http://localhost:8000/predecir"
 
-# 🔴 ESTO ES VITAL: Lista de TODAS las columnas que tu modelo entrenado espera
-# (Asegúrate de que estas sean exactamente las columnas con las que entrenaste, en el mismo orden)
+# 🔴 Lista de TODAS las columnas que tu modelo entrenado espera
 COLUMNAS_ESPERADAS = [
     'amt', 'gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location', 
     'trans_hour', 'trans_day_of_week', 'trans_month', 'age', 'distance_km',
@@ -23,37 +24,50 @@ COLUMNAS_ESPERADAS = [
 ]
 
 def alinear_columnas(df_transformado: pd.DataFrame) -> pd.DataFrame:
-    """
-    Como en streaming llega de a 1 fila, get_dummies no creará todas las columnas categóricas.
-    Esta función rellena con 0 las columnas faltantes para que el modelo no colapse.
-    """
+    """Asegura que el DataFrame tenga exactamente las columnas que el modelo espera."""
     for col in COLUMNAS_ESPERADAS:
         if col not in df_transformado.columns:
             df_transformado[col] = 0
-            
-    # Retornar exactamente en el orden que espera el modelo
     return df_transformado[COLUMNAS_ESPERADAS]
 
-def simular_streaming_crudo():
-    print("Iniciando simulador de streaming utilizando el pipeline completo...")
-    
-    # 1. Leemos el archivo en CRUDO (simulando eventos históricos)
-    df_raw = pd.read_csv('datos/02_fraudTest.csv')
-    
-    # 2. Iteramos fila por fila para simular que llegan eventos secuenciales
-    for index, fila in df_raw.iterrows():
-        # Convertimos la fila en un DataFrame de 1 solo registro
-        df_evento = pd.DataFrame([fila])
-        
-        try:
-            # ========================================================
-            #  AQUÍ APLICAMOS TU PIPELINE EN MICRO-BATCH (1 FILA)
-            # ========================================================
+st.set_page_config(page_title="Simulador de Fraude", layout="wide")
+st.title("🛡️ Simulador de Detección de Fraude en Tiempo Real")
+
+st.markdown("Sube tu archivo CSV **crudo** (ej. `02_fraudTest.csv`) para pasarlo por el pipeline y clasificar cada transacción en la API de Render:")
+archivo_subido = st.file_uploader("Elige un archivo CSV", type="csv")
+
+if archivo_subido is not None:
+    try:
+        df_datos = pd.read_csv(archivo_subido)
+        st.success(f"Archivo cargado correctamente. {len(df_datos)} transacciones listas para procesar.")
+    except Exception as e:
+        st.error(f"Error al leer el archivo: {e}")
+        st.stop()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        iniciar = st.button("▶ Iniciar Streaming y Pipeline", type="primary", use_container_width=True)
+    with col2:
+        detener = st.button("⏹ Detener", use_container_width=True)
+
+    metricas_placeholder = st.empty()
+    tabla_placeholder = st.empty()
+
+    if 'historial' not in st.session_state:
+        st.session_state.historial = []
+
+    if iniciar and not detener:
+        for index, fila in df_datos.iterrows():
+            if detener:
+                break
+            
+            # --- 1. PASAMOS LA FILA ÚNICA POR EL PIPELINE ---
+            df_evento = pd.DataFrame([fila])
             
             # Paso A: Validación
             df_valido = validar_estructura_y_semantica(df_evento)
             if df_valido.empty:
-                print(f"[Transacción {index}] Ignorada: Falló validación")
+                st.warning(f"Fila {index} ignorada por validación.")
                 continue
                 
             # Paso B: Limpieza
@@ -61,32 +75,48 @@ def simular_streaming_crudo():
             if df_limpio.empty:
                 continue
                 
-            # Paso C: Transformación (feature engineering: edad, distancias, etc.)
+            # Paso C: Transformación
             df_trans = transformar_datos(df_limpio)
             
-            # Paso D: Alineación de Columnas (Arregla el problema de get_dummies)
+            # Paso D: Alineación
             df_final = alinear_columnas(df_trans)
             
-            # Convertimos la fila única ya procesada a diccionario
-            datos_prediccion = df_final.iloc[0].to_dict()
+            transaccion = df_final.iloc[0].to_dict()
             
-            # ========================================================
-            # 🌐 ENVIAMOS A LA API EN RENDER
-            # ========================================================
-            respuesta = requests.post(API_URL, json=datos_prediccion, timeout=5)
-            
-            if respuesta.status_code == 200:
-                resultado = respuesta.json()
-                estado = "🚨 FRAUDE 🚨" if resultado['es_fraude'] else "✅ OK"
-                print(f"[Evento {index:05d}] | Monto original: ${fila['amt']:.2f} | Predicción: {estado}")
-            else:
-                print(f"[Evento {index:05d}] | ERROR API: {respuesta.status_code}")
+            # --- 2. ENVIAMOS A RENDER ---
+            try:
+                res = requests.post(API_URL, json=transaccion, timeout=30)
+                if res.status_code == 200:
+                    data_api = res.json()
+                    estado = "🚨 FRAUDE" if data_api["es_fraude"] else "✅ OK"
+                    
+                    st.session_state.historial.insert(0, {
+                        "ID": index,
+                        "Monto ($)": round(fila.get('amt', 0), 2),
+                        "Categoría": fila.get('category', 'N/A'),
+                        "Distancia (km)": round(df_final.iloc[0]['distance_km'], 1),
+                        "Predicción": estado
+                    })
+                    
+                    if len(st.session_state.historial) > 20: # Mostramos solo las últimas 20 en la UI
+                        st.session_state.historial.pop()
+                else:
+                    st.error(f"Error {res.status_code} desde la API.")
+                    
+            except Exception as e:
+                st.error(f"Error conectando a la API: {e}")
+                break
                 
-        except Exception as e:
-            print(f"[Evento {index:05d}] | Error en procesamiento del pipeline: {e}")
-            
-        # Pausa para simular el tráfico en tiempo real humano
-        time.sleep(random.uniform(0.1, 1.2))
-
-if __name__ == "__main__":
-    simular_streaming_crudo()
+            # --- 3. ACTUALIZAR DASHBOARD ---
+            fraudes = sum(1 for item in st.session_state.historial if "FRAUDE" in item["Predicción"])
+            with metricas_placeholder.container():
+                kpi1, kpi2 = st.columns(2)
+                kpi1.metric("Transacciones Evaluadas", len(st.session_state.historial))
+                kpi2.metric("Fraudes Detectados", fraudes)
+                
+            with tabla_placeholder.container():
+                st.dataframe(pd.DataFrame(st.session_state.historial), use_container_width=True, hide_index=True)
+                
+            time.sleep(random.uniform(0.1, 0.8)) # Pausa para simular fluidez
+else:
+    st.info("Esperando archivo CSV crudo...")

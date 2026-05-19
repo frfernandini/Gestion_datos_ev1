@@ -12,7 +12,7 @@ __pycache__/
 # Datos generados por el pipeline (no deben ir al repo)
 datos_preprocesados.csv
 datos_rechazados.csv
-
+02_fraudTest.csv
 # Opcional: Si el archivo 02_fraudTest.csv es muy pesado, deberías ignorarlo. 
 # Si es un archivo de prueba pequeño, puedes omitir esta línea.
 # datos/*.csv

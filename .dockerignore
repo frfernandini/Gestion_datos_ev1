@@ -15,7 +15,7 @@ README.md
 datos_preprocesados.csv
 datos_rechazados.csv
 datos/ 
-
+02_fraudTest.csv
 # Entornos virtuales
 venv/
 .venv/
