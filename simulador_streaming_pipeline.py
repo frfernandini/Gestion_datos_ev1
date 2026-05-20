@@ -57,6 +57,7 @@ if archivo_subido is not None:
         st.session_state.historial = []
         st.session_state.total_transacciones = 0
         st.session_state.total_fraudes = 0
+        st.session_state.total_latencia = 0.0
 
     if iniciar and not detener:
         for index, fila in df_datos.iterrows():
@@ -100,6 +101,7 @@ if archivo_subido is not None:
                     
                     fin_latencia = time.time()
                     latencia = round(fin_latencia - inicio_latencia, 3)
+                    st.session_state.total_latencia += latencia
                     
                     st.session_state.historial.insert(0, {
                         "ID": index,
@@ -120,12 +122,12 @@ if archivo_subido is not None:
                 break
                 
             # --- 3. ACTUALIZAR DASHBOARD ---
-            latencia_actual = st.session_state.historial[0]["Latencia (s)"] if st.session_state.historial else 0
+            latencia_promedio = round(st.session_state.total_latencia / st.session_state.total_transacciones, 3) if st.session_state.total_transacciones > 0 else 0
             with metricas_placeholder.container():
                 kpi1, kpi2, kpi3 = st.columns(3)
                 kpi1.metric("Transacciones Evaluadas", st.session_state.total_transacciones)
                 kpi2.metric("Fraudes Detectados", st.session_state.total_fraudes)
-                kpi3.metric("Latencia pipeline + API (s)", f"{latencia_actual}s")
+                kpi3.metric("Latencia Promedio (s)", f"{latencia_promedio}s")
                 
             with tabla_placeholder.container():
                 st.dataframe(pd.DataFrame(st.session_state.historial), use_container_width=True, hide_index=True)
