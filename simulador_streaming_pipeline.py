@@ -4,15 +4,15 @@ import requests
 import time
 import random
 
-# Importamos las piezas de tu pipeline existente
+
 from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
-# Como FastAPI y Streamlit ahora comparten la máquina, se hablan internamente
+
 API_URL = "http://localhost:8001/predecir"
 
-# 🔴 Lista de TODAS las columnas que tu modelo entrenado espera
+
 COLUMNAS_ESPERADAS = [
     'amt', 'gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location', 
     'trans_hour', 'trans_day_of_week', 'trans_month', 'age', 'distance_km',
@@ -31,9 +31,9 @@ def alinear_columnas(df_transformado: pd.DataFrame) -> pd.DataFrame:
     return df_transformado[COLUMNAS_ESPERADAS]
 
 st.set_page_config(page_title="Simulador de Fraude", layout="wide")
-st.title("🛡️ Simulador de Detección de Fraude en Tiempo Real")
+st.title("Simulador de Detección de Fraude en Tiempo Real")
 
-st.markdown("Sube tu archivo CSV **crudo** (ej. `02_fraudTest.csv`) para pasarlo por el pipeline y clasificar cada transacción en la API de Render:")
+st.markdown("Sube tu archivo CSV **crudo** (ej. `02_fraudTest.csv`):")
 archivo_subido = st.file_uploader("Elige un archivo CSV", type="csv")
 
 if archivo_subido is not None:

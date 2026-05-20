@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 
-# Importamos nuestros 4 módulos
+
 from ingesta import ingestar_datos_csv
 from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
@@ -57,7 +57,7 @@ def ejecutar_pipeline():
             # Paso 4: Transformación (Feature Engineering)
             df_transformado = transformar_datos(df_limpio)
             
-            # (Opcional) Paso 5: Exportar el resultado final para dárselo al modelo
+            # Paso 5: Exportar el resultado final
             df_transformado.to_csv('datos_preprocesados.csv', index=False)
             
             exito = cargar_datos_supabase(df_transformado, "transacciones_ml_procesadas", URL_SUPABASE)

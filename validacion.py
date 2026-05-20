@@ -1,22 +1,13 @@
 import pandas as pd
 import logging
 
-# Instanciamos el logger para este módulo
+
 logger = logging.getLogger(__name__)
 
 def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Realiza pruebas de calidad de datos (Data Quality).
-    Falla y detiene el proceso si la estructura es incorrecta.
-    Crea 'flags' (banderas) cuando detecta reglas de negocio violadas, 
-    para que el modelo aprenda de estos posibles intentos de fraude.
-    """
     logger.info("Iniciando validación estructural y semántica de los datos...")
     df_valido = df.copy()
     
-    # ==========================================
-    # 1. VALIDACIÓN ESTRUCTURAL
-    # ==========================================
     logger.info("Comprobando estructura (esquema de columnas)...")
     
     columnas_esperadas = [
@@ -25,7 +16,6 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
         'lat', 'long', 'city_pop', 'job', 'dob', 'trans_num', 'unix_time', 
         'merch_lat', 'merch_long'
     ]
-    # NOTA: 'is_fraud' se removió de la lista estricta porque en streaming (inferencia) no existirá.
     
     columnas_faltantes = [col for col in columnas_esperadas if col not in df_valido.columns]
     
@@ -35,9 +25,7 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
     else:
         logger.info("[+] Validación estructural aprobada: Todas las columnas requeridas están presentes.")
 
-    # ==========================================
-    # 2. VALIDACIÓN SEMÁNTICA (Reglas de Negocio con Flags)
-    # ==========================================
+    
     logger.info("Comprobando semántica y marcando anomalías (creación de flags)...")
 
     # Regla A: El monto (amt) debe ser >= 0. Si es negativo, marcamos.
@@ -46,11 +34,9 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
     if len(idx_monto_invalido) > 0:
         logger.warning(f"¡Alerta! {len(idx_monto_invalido)} transacciones con monto negativo. Se marcarán como sospechosas.")
         df_valido.loc[idx_monto_invalido, 'flag_invalid_amt'] = 1
-        # Neutralizamos el valor pasándolo a nulo para que limpieza lo trate
         df_valido.loc[idx_monto_invalido, 'amt'] = pd.NA
 
     # Regla B: La variable objetivo (is_fraud). 
-    # Solo la validamos si viene en los datos (es decir, en entrenamiento). En streaming puede no venir o venir nula.
     if 'is_fraud' in df_valido.columns:
         filas_antes = df_valido.shape[0]
         df_valido = df_valido[df_valido['is_fraud'].isin([0, 1]) | df_valido['is_fraud'].isna()]
@@ -58,7 +44,6 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
         if target_eliminados > 0:
             logger.warning(f"Se eliminaron {target_eliminados} registros porque la etiqueta 'is_fraud' no era 0 ni 1 (No sirven para entrenar).")
 
-    # Regla C: Coordenadas planetarias (Lat: -90 a 90 | Long: -180 a 180)
     df_valido['flag_fake_location'] = 0
     
     idx_fake_titular = df_valido[

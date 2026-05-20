@@ -41,7 +41,7 @@ def transformar_datos(df: pd.DataFrame) -> pd.DataFrame:
             df_trans['gender'] = df_trans['gender'].map({'M': 1, 'F': 0})
             
         if 'category' in df_trans.columns:
-            # CORRECCIÓN 1: Agregamos dtype=int para forzar 1 y 0 en lugar de True/False
+            #Agregamos dtype=int para forzar 1 y 0 en lugar de True/False
             df_trans = pd.get_dummies(df_trans, columns=['category'], drop_first=True, dtype=int)
 
         # 5. Eliminación de Columnas
@@ -54,7 +54,7 @@ def transformar_datos(df: pd.DataFrame) -> pd.DataFrame:
         columnas_existentes = [col for col in columnas_a_eliminar if col in df_trans.columns]
         df_trans = df_trans.drop(columns=columnas_existentes)
         
-        # 6. Estandarización de nombres de columnas (Para LightGBM/XGBoost)
+        # 6. Estandarización de nombres de columnas
         logger.info("Estandarizando nombres de columnas para compatibilidad con ML...")
         df_trans = df_trans.rename(columns=lambda x: re.sub('[^A-Za-z0-9_]+', '_', x))
 

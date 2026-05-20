@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 
-# Instanciamos el logger para este módulo específico
+# Instancia logger
 logger = logging.getLogger(__name__)
 
 def ingestar_datos_csv(ruta_archivo: str) -> pd.DataFrame:

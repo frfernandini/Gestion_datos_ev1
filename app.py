@@ -16,7 +16,6 @@ app = FastAPI(
 
 # 2. Cargar el modelo en memoria al iniciar la API
 try:
-    # Reemplaza con el nombre exacto de tu archivo
     modelo = joblib.load('modelo_fraude_base_500k_datos.pkl') 
     logger.info("Modelo cargado exitosamente.")
 except Exception as e:
@@ -60,7 +59,7 @@ def predecir_fraude(datos_transaccion: dict = Body(
         raise HTTPException(status_code=500, detail="El modelo no está disponible.")
     
     try:
-        # Convertir el JSON (diccionario) que recibimos a un DataFrame de 1 fila
+        # Convertir el JSON (diccionario) 
         df_nueva_transaccion = pd.DataFrame([datos_transaccion])
         
         # Realizar la predicción
