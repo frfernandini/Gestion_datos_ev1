@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,28 @@ def limpiar_datos(df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Valores nulos tratados (mediana para numéricos, 'Desconocido' para texto).")
     else:
         logger.info("No se detectaron valores nulos en el dataset.")
+
+    # 4. Anonimización de Datos Sensibles (PII)
+    logger.info("Iniciando enmascaramiento de datos sensibles...")
+    
+    # 4.1 Enmascarar la tarjeta de crédito (solo conservar últimos 4 dígitos)
+    if 'cc_num' in df_clean.columns:
+        df_clean['cc_num'] = df_clean['cc_num'].astype(str).apply(
+            lambda x: '*' * (len(x) - 4) + x[-4:] if len(x) > 4 else x
+        )
+        logger.info("Tarjetas de crédito enmascaradas con éxito.")
+        
+    # 4.2 Hashing de nombres y apellidos (irreversible)
+    def aplicar_hash(texto):
+        if pd.isna(texto): return texto
+        return hashlib.sha256(str(texto).encode('utf-8')).hexdigest()
+
+    if 'first' in df_clean.columns:
+        df_clean['first'] = df_clean['first'].apply(aplicar_hash)
+    if 'last' in df_clean.columns:
+        df_clean['last'] = df_clean['last'].apply(aplicar_hash)
+        
+    logger.info("Nombres de titulares anonimizados vía hashing (SHA-256).")
         
     logger.info(f"Limpieza finalizada. Dimensiones actuales: {df_clean.shape[0]} filas, {df_clean.shape[1]} columnas.")
     return df_clean

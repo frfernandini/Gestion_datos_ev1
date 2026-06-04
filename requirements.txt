@@ -7,3 +7,4 @@ joblib
 streamlit
 requests
 python-dotenv
+psutil

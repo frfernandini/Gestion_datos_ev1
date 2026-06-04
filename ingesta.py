@@ -22,5 +22,5 @@ def ingestar_datos_csv(ruta_archivo: str) -> pd.DataFrame:
         return None
 
 # --- Ejecución del módulo ---
-ruta_fuente = 'datos/02_fraudTest.csv'
+ruta_fuente = 'datos/02_fraudTest_10k.csv'
 df_fraude_raw = ingestar_datos_csv(ruta_fuente)

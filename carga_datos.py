@@ -12,12 +12,14 @@ def cargar_datos_supabase(df_limpio: pd.DataFrame, nombre_tabla: str, url_conexi
     try:
         logger.info(f"Intentando cargar {len(df_limpio)} registros a la tabla '{nombre_tabla}'...")
         
-        # 2. pasamos la URL 
+        # 2. pasamos la URL (optimizada con chunksize y method)
         df_limpio.to_sql(
             name=nombre_tabla, 
             con=url_corregida, 
             if_exists='append', 
-            index=False
+            index=False,
+            chunksize=5000,
+            method='multi'
         )
         
         logger.info("Carga exitosa. Transacción confirmada en Supabase.")
