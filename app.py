@@ -1,11 +1,76 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Depends, Header
 import pandas as pd
 import joblib
 import logging
+import os
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# Cargar variables de entorno
+load_dotenv()
 
 # Configurar logging básico
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Cargar clave API desde variables de entorno
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    logger.warning("API_KEY no configurada en .env - autenticación deshabilitada")
+
+# Configurar rate limiting (5 requests por minuto por IP)
+limiter = Limiter(key_func=get_remote_address)
+
+# Modelo de validación para las transacciones
+class TransaccionPredecir(BaseModel):
+    amt: float = Field(..., gt=0, description="Monto de la transacción (debe ser > 0)")
+    gender: int = Field(..., ge=0, le=1, description="Género: 0 (Femenino) o 1 (Masculino)")
+    city_pop: int = Field(..., ge=0, description="Población de la ciudad")
+    unix_time: int = Field(..., ge=0, description="Timestamp Unix")
+    flag_invalid_amt: int = Field(..., ge=0, le=1, description="Bandera de monto inválido (0 o 1)")
+    flag_fake_location: int = Field(..., ge=0, le=1, description="Bandera de ubicación falsa (0 o 1)")
+    trans_hour: int = Field(..., ge=0, le=23, description="Hora de la transacción (0-23)")
+    trans_day_of_week: int = Field(..., ge=0, le=6, description="Día de la semana (0-6)")
+    trans_month: int = Field(..., ge=1, le=12, description="Mes (1-12)")
+    age: int = Field(..., gt=0, le=150, description="Edad del usuario")
+    distance_km: float = Field(..., ge=0, description="Distancia en km (>= 0)")
+    category_food_dining: int = Field(..., ge=0, le=1)
+    category_gas_transport: int = Field(..., ge=0, le=1)
+    category_grocery_net: int = Field(..., ge=0, le=1)
+    category_grocery_pos: int = Field(..., ge=0, le=1)
+    category_health_fitness: int = Field(..., ge=0, le=1)
+    category_home: int = Field(..., ge=0, le=1)
+    category_kids_pets: int = Field(..., ge=0, le=1)
+    category_misc_net: int = Field(..., ge=0, le=1)
+    category_misc_pos: int = Field(..., ge=0, le=1)
+    category_personal_care: int = Field(..., ge=0, le=1)
+    category_shopping_net: int = Field(..., ge=0, le=1)
+    category_shopping_pos: int = Field(..., ge=0, le=1)
+    category_travel: int = Field(..., ge=0, le=1)
+
+# Función para verificar autenticación
+def verificar_api_key(authorization: str = Header(None)):
+    """Verifica que el header Authorization contenga una clave API válida"""
+    if not API_KEY:
+        # Si no hay clave configurada, permitir acceso (para desarrollo)
+        return True
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header faltante")
+    
+    # Esperar formato: "Bearer tu_clave_api"
+    partes = authorization.split(" ")
+    if len(partes) != 2 or partes[0] != "Bearer":
+        raise HTTPException(status_code=401, detail="Formato de Authorization inválido. Usa: Bearer <API_KEY>")
+    
+    token = partes[1]
+    if token != API_KEY:
+        raise HTTPException(status_code=403, detail="Clave API inválida")
+    
+    return True
 
 # 1. Inicializar la aplicación FastAPI
 app = FastAPI(
@@ -13,6 +78,13 @@ app = FastAPI(
     description="API para evaluar transacciones en tiempo real",
     version="1.0.0"
 )
+
+# Agregar rate limiting a la app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(
+    status_code=429,
+    detail="Demasiadas solicitudes. Límite: 5 por minuto por IP"
+))
 
 # 2. Cargar el modelo en memoria al iniciar la API
 try:
@@ -24,43 +96,29 @@ except Exception as e:
 
 # 3. Crear el endpoint (URL) para hacer predicciones
 @app.post("/predecir")
-def predecir_fraude(datos_transaccion: dict = Body(
-    ...,
-        example={
-            "amt": 45.50,
-            "gender": 1,
-            "city_pop": 120500,
-            "unix_time": 1371816893,
-            "flag_invalid_amt": 0,
-            "flag_fake_location": 0,
-            "trans_hour": 14,
-            "trans_day_of_week": 3,
-            "trans_month": 10,
-            "age": 34,
-            "distance_km": 12.4,
-            "category_food_dining": 1,
-            "category_gas_transport": 0,
-            "category_grocery_net": 0,
-            "category_grocery_pos": 0,
-            "category_health_fitness": 0,
-            "category_home": 0,
-            "category_kids_pets": 0,
-            "category_misc_net": 0,
-            "category_misc_pos": 0,
-            "category_personal_care": 0,
-            "category_shopping_net": 0,
-            "category_shopping_pos": 0,
-            "category_travel": 0
-        }
-    )
-    ):
+@limiter.limit("5/minute")
+def predecir_fraude(
+    request,
+    datos_transaccion: TransaccionPredecir,
+    _auth: bool = Depends(verificar_api_key)
+):
+    """
+    Realiza predicción de fraude.
+    
+    Requiere:
+    - Header: Authorization: Bearer <API_KEY>
+    - Body: JSON con datos de la transacción validados
+    
+    Límite: 5 solicitudes por minuto por IP
+    """
     
     if modelo is None:
         raise HTTPException(status_code=500, detail="El modelo no está disponible.")
     
     try:
-        # Convertir el JSON (diccionario) 
-        df_nueva_transaccion = pd.DataFrame([datos_transaccion])
+        # Convertir el modelo Pydantic a diccionario y luego a DataFrame
+        datos_dict = datos_transaccion.dict()
+        df_nueva_transaccion = pd.DataFrame([datos_dict])
         
         # Realizar la predicción
         prediccion = modelo.predict(df_nueva_transaccion)

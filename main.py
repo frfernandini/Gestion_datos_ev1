@@ -2,6 +2,7 @@ import logging
 import pandas as pd
 import time
 import psutil
+from urllib.parse import quote
 
 
 from ingesta import ingestar_datos_csv
@@ -20,7 +21,20 @@ load_dotenv()
 # ==========================================
 # 1. Guardar en un archivo de texto
 
-URL_SUPABASE = os.getenv("SUPABASE_URL")
+# Construir URL de conexión de forma segura
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "postgres")
+
+URL_SUPABASE = (
+    f"postgresql://"
+    f"{quote(DB_USER, safe='')}:"
+    f"{quote(DB_PASSWORD, safe='')}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    f"?sslmode=require"
+)
 logging.basicConfig(
     filename='ejecucion_pipeline.log', 
     level=logging.INFO,

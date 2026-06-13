@@ -8,3 +8,5 @@ streamlit
 requests
 python-dotenv
 psutil
+slowapi
+pydantic
