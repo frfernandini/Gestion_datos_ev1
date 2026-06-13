@@ -116,7 +116,6 @@ except Exception as e:
 @app.post("/predecir")
 @limiter.limit("5/minute")
 def predecir_fraude(
-    request,
     datos_transaccion: TransaccionPredecir,
     _auth: bool = Depends(verificar_api_key)
 ):
