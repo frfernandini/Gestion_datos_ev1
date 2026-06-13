@@ -48,28 +48,38 @@ def alinear_columnas(df_transformado: pd.DataFrame) -> pd.DataFrame:
     return df_transformado[COLUMNAS_ESPERADAS]
 
 def convertir_a_dict_valido(fila_series: pd.Series) -> dict:
-    """Convierte una fila pandas a dict con tipos correctos para la API."""
-    transaccion = fila_series.to_dict()
+    """Convierte una fila pandas a dict con tipos Python nativos (no numpy)."""
+    transaccion = {}
     
-    # Validaciones y conversiones de tipos
-    for key, value in transaccion.items():
+    # Campos que deben ser INT
+    int_fields = ['gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location', 
+                  'trans_hour', 'trans_day_of_week', 'trans_month', 'age',
+                  'category_food_dining', 'category_gas_transport', 'category_grocery_net',
+                  'category_grocery_pos', 'category_health_fitness', 'category_home',
+                  'category_kids_pets', 'category_misc_net', 'category_misc_pos',
+                  'category_personal_care', 'category_shopping_net', 'category_shopping_pos',
+                  'category_travel']
+    
+    # Campos que deben ser FLOAT
+    float_fields = ['amt', 'distance_km']
+    
+    for key in fila_series.index:
+        value = fila_series[key]
+        
         # Convertir NaN a 0
         if pd.isna(value):
-            transaccion[key] = 0
-        # Campos que deben ser INT
-        elif key in ['gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location', 
-                     'trans_hour', 'trans_day_of_week', 'trans_month', 'age',
-                     'category_food_dining', 'category_gas_transport', 'category_grocery_net',
-                     'category_grocery_pos', 'category_health_fitness', 'category_home',
-                     'category_kids_pets', 'category_misc_net', 'category_misc_pos',
-                     'category_personal_care', 'category_shopping_net', 'category_shopping_pos',
-                     'category_travel']:
-            transaccion[key] = int(value)
-        # Campos que deben ser FLOAT
-        elif key in ['amt', 'distance_km']:
-            transaccion[key] = float(value)
+            value = 0
+        
+        # Convertir a tipos Python nativos (no numpy)
+        if key in int_fields:
+            transaccion[key] = int(value)  # int() convierte numpy.int64 → int
+        elif key in float_fields:
+            transaccion[key] = float(value)  # float() convierte numpy.float64 → float
+        else:
+            transaccion[key] = value
     
-    st.write(f"DEBUG - Datos enviados: {transaccion}")  # Temporalmente para debug
+    st.write(f"DEBUG - Tipos enviados: {[(k, type(v).__name__) for k, v in transaccion.items()]}")
+    st.write(f"DEBUG - Datos enviados: {transaccion}")
     return transaccion
 
 st.set_page_config(page_title="Simulador de Fraude", layout="wide")

@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body, Depends, Header
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 import pandas as pd
 import joblib
 import logging
@@ -84,6 +86,16 @@ app = FastAPI(
     description="API para evaluar transacciones en tiempo real",
     version="1.0.0"
 )
+
+# Manejador personalizado para errores de validación (422)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Retorna detalles completos de errores de validación"""
+    logger.error(f"Error de validación: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body if hasattr(exc, 'body') else None}
+    )
 
 # Agregar rate limiting a la app
 app.state.limiter = limiter
