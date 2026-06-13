@@ -123,6 +123,10 @@ if archivo_subido is not None:
             if detener:
                 break
             
+            # ⏱️ Pequeño delay para simular transacciones en tiempo real
+            # y respetar el rate limiting (5 transacciones por minuto)
+            time.sleep(0.5)
+            
             inicio_latencia = time.time()
             
             # --- 1. PASAMOS LA FILA ÚNICA POR EL PIPELINE ---

@@ -111,7 +111,7 @@ async def rate_limit_exception_handler(request, exc):
     logger.warning(f"⚠️ Rate limit excedido para IP: {request.client.host}")
     return JSONResponse(
         status_code=429,
-        content={"detail": "Demasiadas solicitudes. Límite: 5 por minuto por IP"}
+        content={"detail": "Demasiadas solicitudes. Límite: 20 por minuto por IP"}
     )
 
 # Agregar rate limiting a la app
@@ -127,7 +127,7 @@ except Exception as e:
 
 # 3. Crear el endpoint (URL) para hacer predicciones
 @app.post("/predecir")
-@limiter.limit("5/minute")
+@limiter.limit("500/minute")
 def predecir_fraude(
     request: Request,
     datos_transaccion: TransaccionPredecir,
@@ -140,7 +140,7 @@ def predecir_fraude(
     - Header: Authorization: Bearer <API_KEY>
     - Body: JSON con datos de la transacción validados
     
-    Límite: 5 solicitudes por minuto por IP
+    Límite: 20 solicitudes por minuto por IP
     """
     
     if modelo is None:
