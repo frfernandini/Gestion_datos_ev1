@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body, Depends, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 # ⚠️ LIMITAR CPU - Establecer threads antes de importar numpy/pandas
@@ -12,6 +13,7 @@ os.environ['NUMEXPR_NUM_THREADS'] = '2'
 import pandas as pd
 import joblib
 import logging
+import hashlib
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from slowapi import Limiter
@@ -25,12 +27,41 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ============ FUNCIONES DE SEGURIDAD ============
+
+def mask_credential(value: str, show_chars: int = 5) -> str:
+    """Oculta credenciales en logs mostrando solo primeros N caracteres"""
+    if not value or len(value) <= show_chars:
+        return "***"
+    return f"{value[:show_chars]}...{value[-3:]}"
+
+def validar_integridad_modelo(ruta: str) -> bool:
+    """Verifica que el archivo del modelo sea válido y no corrupto"""
+    if not os.path.exists(ruta):
+        logger.error(f"❌ CRÍTICO: Modelo no encontrado en {ruta}")
+        return False
+    
+    try:
+        # Intentar cargar el modelo
+        modelo_test = joblib.load(ruta)
+        
+        # Verificar que tenga el método predict
+        if not hasattr(modelo_test, 'predict'):
+            logger.error(f"❌ CRÍTICO: Modelo no tiene método 'predict'")
+            return False
+        
+        logger.info(f"✅ Modelo validado correctamente: {type(modelo_test).__name__}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ CRÍTICO: Error al validar modelo: {e}")
+        return False
+
 # Cargar clave API desde variables de entorno
 API_KEY = os.getenv("API_KEY")
 if not API_KEY:
-    logger.warning("API_KEY no configurada en .env - autenticación deshabilitada")
+    logger.warning("⚠️ API_KEY no configurada en variables de entorno - autenticación deshabilitada")
 else:
-    logger.info(f"API_KEY cargada: {API_KEY[:10]}...{API_KEY[-5:]}")  # Log parcial por seguridad
+    logger.info(f"✅ API_KEY cargada: {mask_credential(API_KEY)}")  # Masked para seguridad
 
 # Configurar rate limiting (5 requests por minuto por IP)
 limiter = Limiter(key_func=get_remote_address)
@@ -70,21 +101,21 @@ def verificar_api_key(authorization: str = Header(None)):
         return True
     
     if not authorization:
-        logger.warning("Sin Authorization header")
+        logger.warning("⚠️ SEGURIDAD: Sin Authorization header")
         raise HTTPException(status_code=401, detail="Authorization header faltante")
     
     # Esperar formato: "Bearer tu_clave_api"
     partes = authorization.split(" ")
     if len(partes) != 2 or partes[0] != "Bearer":
-        logger.warning(f"Formato de Authorization inválido: {authorization[:20]}...")
+        logger.warning(f"⚠️ SEGURIDAD: Formato de Authorization inválido")
         raise HTTPException(status_code=401, detail="Formato de Authorization inválido. Usa: Bearer <API_KEY>")
     
     token = partes[1]
     if token != API_KEY:
-        logger.error(f"Token incorrecto. Recibido: {token[:10]}...{token[-5:]} | Esperado: {API_KEY[:10]}...{API_KEY[-5:]}")
+        logger.error(f"❌ SEGURIDAD: Token incorrecto. Recibido: {mask_credential(token)} | Esperado: {mask_credential(API_KEY)}")
         raise HTTPException(status_code=403, detail="Clave API inválida")
     
-    logger.info("Autenticación exitosa")
+    logger.info("✅ Autenticación exitosa")
     return True
 
 # 1. Inicializar la aplicación FastAPI
@@ -93,6 +124,24 @@ app = FastAPI(
     description="API para evaluar transacciones en tiempo real",
     version="1.0.0"
 )
+
+# ============ CONFIGURAR CORS ============
+# Permitir solo orígenes específicos (máximo 1 en producción)
+ALLOWED_ORIGINS = [
+    "http://localhost:8000",       # Desarrollo local
+    "http://localhost:3000",       # Desarrollo alternativo
+    "https://gestion-datos-ev1.onrender.com",  # Render producción
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["POST"],  # Solo POST para /predecir
+    allow_headers=["Content-Type", "Authorization"],
+)
+
+logger.info(f"✅ CORS configurado para: {ALLOWED_ORIGINS}")
 
 # Manejador personalizado para errores de validación (422)
 @app.exception_handler(RequestValidationError)
@@ -117,12 +166,19 @@ async def rate_limit_exception_handler(request, exc):
 # Agregar rate limiting a la app
 app.state.limiter = limiter
 
-# 2. Cargar el modelo en memoria al iniciar la API
-try:
-    modelo = joblib.load('modelo_fraude_base_500k_datos.pkl') 
-    logger.info("Modelo cargado exitosamente.")
-except Exception as e:
-    logger.error(f"Error al cargar el modelo: {e}")
+# 2. Cargar y validar el modelo en memoria al iniciar la API
+MODELO_PATH = 'modelo_fraude_base_500k_datos.pkl'
+modelo = None
+
+if validar_integridad_modelo(MODELO_PATH):
+    try:
+        modelo = joblib.load(MODELO_PATH)
+        logger.info(f"✅ Modelo cargado exitosamente: {type(modelo).__name__}")
+    except Exception as e:
+        logger.error(f"❌ CRÍTICO: Error al cargar modelo validado: {e}")
+        modelo = None
+else:
+    logger.error(f"❌ CRÍTICO: Validación de integridad del modelo FALLÓ")
     modelo = None
 
 # 3. Crear el endpoint (URL) para hacer predicciones
