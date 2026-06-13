@@ -173,7 +173,12 @@ if archivo_subido is not None:
                     if len(st.session_state.historial) > 20: # Mostramos solo las últimas 20 en la UI
                         st.session_state.historial.pop()
                 else:
-                    st.error(f"Error {res.status_code} desde la API.")
+                    # Mostrar error completo
+                    st.error(f"❌ Error {res.status_code} desde la API.")
+                    st.error(f"Response: {res.text}")  # Mostrar el response completo
+                    st.write(f"DEBUG - Headers enviados: {obtener_headers()}")
+                    st.write(f"DEBUG - Status code: {res.status_code}")
+                    break
                     
             except Exception as e:
                 st.error(f"Error conectando a la API: {e}")
