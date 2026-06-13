@@ -104,12 +104,18 @@ async def validation_exception_handler(request, exc):
         content={"detail": exc.errors(), "body": exc.body if hasattr(exc, 'body') else None}
     )
 
+# Manejador personalizado para rate limit exceeded (429)
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exception_handler(request, exc):
+    """Retorna error 429 cuando se supera el rate limit"""
+    logger.warning(f"⚠️ Rate limit excedido para IP: {request.client.host}")
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Demasiadas solicitudes. Límite: 5 por minuto por IP"}
+    )
+
 # Agregar rate limiting a la app
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(
-    status_code=429,
-    detail="Demasiadas solicitudes. Límite: 5 por minuto por IP"
-))
 
 # 2. Cargar el modelo en memoria al iniciar la API
 try:
@@ -141,16 +147,24 @@ def predecir_fraude(
         raise HTTPException(status_code=500, detail="El modelo no está disponible.")
     
     try:
+        logger.info(f"Predicción solicitada desde IP: {request.client.host}")
+        
         # Convertir el modelo Pydantic a diccionario y luego a DataFrame
         datos_dict = datos_transaccion.dict()
+        logger.debug(f"Datos recibidos: {datos_dict}")
+        
         df_nueva_transaccion = pd.DataFrame([datos_dict])
+        logger.debug(f"DataFrame creado con shape: {df_nueva_transaccion.shape}")
         
         # Realizar la predicción
         prediccion = modelo.predict(df_nueva_transaccion)
+        logger.debug(f"Predicción realizada: {prediccion}")
         
         # Extraer el resultado (0 o 1)
         resultado = int(prediccion[0])
         es_fraude = bool(resultado == 1)
+        
+        logger.info(f"Predicción exitosa: Fraude={es_fraude}")
         
         return {
             "estado": "éxito",
@@ -159,5 +173,7 @@ def predecir_fraude(
         }
         
     except Exception as e:
-        logger.error(f"Error durante la predicción: {e}")
-        raise HTTPException(status_code=400, detail=f"Error al procesar los datos: {str(e)}")
+        import traceback
+        logger.error(f"❌ ERROR en predicción: {str(e)}")
+        logger.error(f"Traceback completo: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
