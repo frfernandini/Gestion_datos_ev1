@@ -14,9 +14,9 @@ fi
 
 echo "✅ Modelo encontrado"
 
-# Iniciar la API (FastAPI) en el puerto 8001 con logging visible
+# Iniciar la API (FastAPI) en el puerto 8001 - logs van a stdout/stderr
 echo "📡 Iniciando FastAPI en puerto 8001..."
-uvicorn app:app --host 0.0.0.0 --port 8001 > /tmp/fastapi.log 2>&1 &
+uvicorn app:app --host 0.0.0.0 --port 8001 --log-level info &
 FASTAPI_PID=$!
 echo "FastAPI PID: $FASTAPI_PID"
 
@@ -25,14 +25,13 @@ sleep 5
 
 # Verificar que FastAPI está corriendo
 if ! kill -0 $FASTAPI_PID 2>/dev/null; then
-    echo "❌ ERROR: FastAPI no se inició correctamente"
-    echo "=== FastAPI Logs ==="
-    cat /tmp/fastapi.log
+    echo "❌ ERROR: FastAPI no se inició correctamente (PID $FASTAPI_PID no existe)"
     exit 1
 fi
 
-echo "✅ FastAPI iniciado correctamente"
+echo "✅ FastAPI está corriendo (PID: $FASTAPI_PID)"
+ps aux | grep uvicorn
 
-# Iniciar el Dashboard (Streamlit) en el puerto 8000
+# Iniciar el Dashboard (Streamlit) en el puerto 8000 - esto se queda en foreground
 echo "🎨 Iniciando Streamlit en puerto 8000..."
-streamlit run simulador_streaming_pipeline.py --server.port 8000 --server.address 0.0.0.0
+exec streamlit run simulador_streaming_pipeline.py --server.port 8000 --server.address 0.0.0.0
