@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 API_KEY = os.getenv("API_KEY")
 if not API_KEY:
     logger.warning("API_KEY no configurada en .env - autenticación deshabilitada")
+else:
+    logger.info(f"API_KEY cargada: {API_KEY[:10]}...{API_KEY[-5:]}")  # Log parcial por seguridad
 
 # Configurar rate limiting (5 requests por minuto por IP)
 limiter = Limiter(key_func=get_remote_address)
@@ -59,17 +61,21 @@ def verificar_api_key(authorization: str = Header(None)):
         return True
     
     if not authorization:
+        logger.warning("Sin Authorization header")
         raise HTTPException(status_code=401, detail="Authorization header faltante")
     
     # Esperar formato: "Bearer tu_clave_api"
     partes = authorization.split(" ")
     if len(partes) != 2 or partes[0] != "Bearer":
+        logger.warning(f"Formato de Authorization inválido: {authorization[:20]}...")
         raise HTTPException(status_code=401, detail="Formato de Authorization inválido. Usa: Bearer <API_KEY>")
     
     token = partes[1]
     if token != API_KEY:
+        logger.error(f"Token incorrecto. Recibido: {token[:10]}...{token[-5:]} | Esperado: {API_KEY[:10]}...{API_KEY[-5:]}")
         raise HTTPException(status_code=403, detail="Clave API inválida")
     
+    logger.info("Autenticación exitosa")
     return True
 
 # 1. Inicializar la aplicación FastAPI
