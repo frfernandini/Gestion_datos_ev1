@@ -1,6 +1,18 @@
 #!/bin/bash
 
 echo "=== Iniciando Fraud Detection Pipeline ==="
+
+# ⚠️ LIMITAR CPU - Restringir threads de numpy/pandas
+export OMP_NUM_THREADS=2
+export OPENBLAS_NUM_THREADS=2
+export MKL_NUM_THREADS=2
+export NUMEXPR_NUM_THREADS=2
+
+echo "CPU Limiting:"
+echo "  OMP_NUM_THREADS=$OMP_NUM_THREADS"
+echo "  OPENBLAS_NUM_THREADS=$OPENBLAS_NUM_THREADS"
+echo "  MKL_NUM_THREADS=$MKL_NUM_THREADS"
+
 echo "Variables de entorno:"
 echo "API_KEY: ${API_KEY:0:10}...${API_KEY: -5}"
 echo "DB_USER: $DB_USER"

@@ -1,10 +1,17 @@
 from fastapi import FastAPI, HTTPException, Body, Depends, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+import os
+
+# ⚠️ LIMITAR CPU - Establecer threads antes de importar numpy/pandas
+os.environ['OMP_NUM_THREADS'] = '2'
+os.environ['OPENBLAS_NUM_THREADS'] = '2'
+os.environ['MKL_NUM_THREADS'] = '2'
+os.environ['NUMEXPR_NUM_THREADS'] = '2'
+
 import pandas as pd
 import joblib
 import logging
-import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from slowapi import Limiter

@@ -1,9 +1,16 @@
+import os
+
+# ⚠️ LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
+os.environ['OMP_NUM_THREADS'] = '2'
+os.environ['OPENBLAS_NUM_THREADS'] = '2'
+os.environ['MKL_NUM_THREADS'] = '2'
+os.environ['NUMEXPR_NUM_THREADS'] = '2'
+
 import streamlit as st
 import pandas as pd
 import requests
 import time
 import random
-import os
 from dotenv import load_dotenv
 
 from validacion import validar_estructura_y_semantica

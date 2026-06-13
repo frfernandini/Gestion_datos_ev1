@@ -1,3 +1,11 @@
+import os
+
+# ⚠️ LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
+os.environ['OMP_NUM_THREADS'] = '2'
+os.environ['OPENBLAS_NUM_THREADS'] = '2'
+os.environ['MKL_NUM_THREADS'] = '2'
+os.environ['NUMEXPR_NUM_THREADS'] = '2'
+
 import pandas as pd
 import logging
 import hashlib
