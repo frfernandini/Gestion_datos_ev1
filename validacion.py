@@ -13,71 +13,80 @@ import logging
 logger = logging.getLogger(__name__)
 
 def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
-    logger.info("Iniciando validación estructural y semántica de los datos...")
+    logger.info("Iniciando validación de datos transformados (pre-carga)...")
     df_valido = df.copy()
     
-    logger.info("Comprobando estructura (esquema de columnas)...")
-    
-    columnas_esperadas = [
-        'trans_date_trans_time', 'cc_num', 'merchant', 'category', 'amt', 
-        'first', 'last', 'gender', 'street', 'city', 'state', 'zip', 
-        'lat', 'long', 'city_pop', 'job', 'dob', 'trans_num', 'unix_time', 
-        'merch_lat', 'merch_long'
+    # Validar que tenga las columnas de ML features (después de transformación)
+    # COLUMNAS NÚCLEO (siempre deben estar)
+    columnas_nucleos = [
+        'amt', 'gender', 'city_pop', 'unix_time',
+        'trans_hour', 'trans_day_of_week', 'trans_month', 'age', 'distance_km'
     ]
     
-    columnas_faltantes = [col for col in columnas_esperadas if col not in df_valido.columns]
+    # CATEGORÍAS (dinámicas, pueden no todas en cada batch)
+    columnas_categorias_posibles = [
+        'category_food_dining', 'category_gas_transport', 'category_grocery_net',
+        'category_grocery_pos', 'category_health_fitness', 'category_home',
+        'category_kids_pets', 'category_misc_net', 'category_misc_pos',
+        'category_personal_care', 'category_shopping_net', 'category_shopping_pos',
+        'category_travel'
+    ]
     
-    if columnas_faltantes:
-        logger.error(f"Fallo Estructural Crítico: Faltan las siguientes columnas: {columnas_faltantes}")
-        raise ValueError(f"El dataset no tiene la estructura esperada. Faltan: {columnas_faltantes}")
+    # Verificar estructura - COLUMNAS NÚCLEO
+    logger.info("Verificando estructura de datos transformados...")
+    columnas_faltantes_nucleos = [col for col in columnas_nucleos if col not in df_valido.columns]
+    
+    if columnas_faltantes_nucleos:
+        logger.error(f"❌ Faltan columnas NÚCLEO: {columnas_faltantes_nucleos}")
+        raise ValueError(f"Dataset incompleto. Faltan columnas críticas: {columnas_faltantes_nucleos}")
     else:
-        logger.info("[+] Validación estructural aprobada: Todas las columnas requeridas están presentes.")
-
+        logger.info(f"✅ Columnas NÚCLEO validadas ({len(columnas_nucleos)} presentes)")
     
-    logger.info("Comprobando semántica y marcando anomalías (creación de flags)...")
-
-    # Regla A: El monto (amt) debe ser >= 0. Si es negativo, marcamos.
-    df_valido['flag_invalid_amt'] = 0
-    idx_monto_invalido = df_valido[df_valido['amt'] < 0].index
-    if len(idx_monto_invalido) > 0:
-        logger.warning(f"¡Alerta! {len(idx_monto_invalido)} transacciones con monto negativo. Se marcarán como sospechosas.")
-        df_valido.loc[idx_monto_invalido, 'flag_invalid_amt'] = 1
-        df_valido.loc[idx_monto_invalido, 'amt'] = pd.NA
-
-    # Regla B: La variable objetivo (is_fraud). 
-    if 'is_fraud' in df_valido.columns:
-        filas_antes = df_valido.shape[0]
-        df_valido = df_valido[df_valido['is_fraud'].isin([0, 1]) | df_valido['is_fraud'].isna()]
-        target_eliminados = filas_antes - df_valido.shape[0]
-        if target_eliminados > 0:
-            logger.warning(f"Se eliminaron {target_eliminados} registros porque la etiqueta 'is_fraud' no era 0 ni 1 (No sirven para entrenar).")
-
-    df_valido['flag_fake_location'] = 0
+    # Verificar categorías (solo las que existan en este batch)
+    categorias_presentes = [col for col in columnas_categorias_posibles if col in df_valido.columns]
+    if categorias_presentes:
+        logger.info(f"✅ Categorías encontradas: {len(categorias_presentes)} de {len(columnas_categorias_posibles)}")
+    else:
+        logger.warning(f"⚠️  No se encontraron columnas de categorías en este batch")
     
-    idx_fake_titular = df_valido[
-        (df_valido['lat'] < -90) | (df_valido['lat'] > 90) |
-        (df_valido['long'] < -180) | (df_valido['long'] > 180)
-    ].index
+    # Validar que no haya valores nulos en columnas críticas
+    logger.info("Verificando valores nulos en columnas críticas...")
+    columnas_criticas = ['amt', 'gender', 'age', 'distance_km', 'trans_hour']
     
-    idx_fake_merch = df_valido[
-        (df_valido['merch_lat'] < -90) | (df_valido['merch_lat'] > 90) |
-        (df_valido['merch_long'] < -180) | (df_valido['merch_long'] > 180)
-    ].index
+    for col in columnas_criticas:
+        if col in df_valido.columns:
+            nulos = df_valido[col].isna().sum()
+            if nulos > 0:
+                logger.warning(f"⚠️  {nulos} valores nulos en columna '{col}'. Se eliminarán esas filas.")
+                df_valido = df_valido[df_valido[col].notna()]
     
-    indices_sospechosos = idx_fake_titular.union(idx_fake_merch)
-    if len(indices_sospechosos) > 0:
-        logger.warning(f"¡Alerta! {len(indices_sospechosos)} transacciones con coordenadas falsas. Se marcarán como sospechosas.")
-        df_valido.loc[indices_sospechosos, 'flag_fake_location'] = 1
-        # Neutralizamos para que no rompa la fórmula de Haversine después
-        df_valido.loc[idx_fake_titular, ['lat', 'long']] = pd.NA
-        df_valido.loc[idx_fake_merch, ['merch_lat', 'merch_long']] = pd.NA
-
-    # Regla D: Género M o F
-    genero_invalido = df_valido[~df_valido['gender'].isin(['M', 'F'])].shape[0]
-    if genero_invalido > 0:
-         logger.warning(f"Detectados {genero_invalido} registros con género distinto a M/F. Se pasarán a nulo.")
-         df_valido.loc[~df_valido['gender'].isin(['M', 'F']), 'gender'] = pd.NA
-
-    logger.info(f"Validación finalizada. Dataset listo con {df_valido.shape[0]} filas y {df_valido.shape[1]} columnas (incluyendo flags).")
+    # Validar rangos de valores
+    logger.info("Verificando rangos de valores...")
+    validaciones = [
+        ('amt', lambda x: x > 0, "Monto debe ser > 0"),
+        ('gender', lambda x: x.isin([0, 1]), "Género debe ser 0 o 1"),
+        ('age', lambda x: (x > 0) & (x <= 150), "Edad debe estar entre 1 y 150"),
+        ('trans_hour', lambda x: (x >= 0) & (x <= 23), "Hora debe estar entre 0 y 23"),
+        ('distance_km', lambda x: x >= 0, "Distancia no puede ser negativa"),
+    ]
     
+    filas_descartadas = 0
+    for col, validacion, msg in validaciones:
+        if col in df_valido.columns:
+            mask_invalido = ~validacion(df_valido[col])
+            filas_invalidas = mask_invalido.sum()
+            if filas_invalidas > 0:
+                logger.warning(f"⚠️  {filas_invalidas} filas inválidas en '{col}': {msg}")
+                df_valido = df_valido[~mask_invalido]
+                filas_descartadas += filas_invalidas
+    
+    if filas_descartadas > 0:
+        logger.info(f"Se descartaron {filas_descartadas} filas por validación de rangos.")
+    
+    # Validar que no esté vacío
+    if df_valido.empty:
+        logger.error("❌ CRÍTICO: Dataset vacío después de validación")
+        raise ValueError("Dataset está vacío después de validación")
+    
+    logger.info(f"✅ Validación completada. {len(df_valido)} filas listas para carga a BD.")
     return df_valido
