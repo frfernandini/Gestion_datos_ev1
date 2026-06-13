@@ -47,6 +47,31 @@ def alinear_columnas(df_transformado: pd.DataFrame) -> pd.DataFrame:
             df_transformado[col] = 0
     return df_transformado[COLUMNAS_ESPERADAS]
 
+def convertir_a_dict_valido(fila_series: pd.Series) -> dict:
+    """Convierte una fila pandas a dict con tipos correctos para la API."""
+    transaccion = fila_series.to_dict()
+    
+    # Validaciones y conversiones de tipos
+    for key, value in transaccion.items():
+        # Convertir NaN a 0
+        if pd.isna(value):
+            transaccion[key] = 0
+        # Campos que deben ser INT
+        elif key in ['gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location', 
+                     'trans_hour', 'trans_day_of_week', 'trans_month', 'age',
+                     'category_food_dining', 'category_gas_transport', 'category_grocery_net',
+                     'category_grocery_pos', 'category_health_fitness', 'category_home',
+                     'category_kids_pets', 'category_misc_net', 'category_misc_pos',
+                     'category_personal_care', 'category_shopping_net', 'category_shopping_pos',
+                     'category_travel']:
+            transaccion[key] = int(value)
+        # Campos que deben ser FLOAT
+        elif key in ['amt', 'distance_km']:
+            transaccion[key] = float(value)
+    
+    st.write(f"DEBUG - Datos enviados: {transaccion}")  # Temporalmente para debug
+    return transaccion
+
 st.set_page_config(page_title="Simulador de Fraude", layout="wide")
 st.title("Simulador de Detección de Fraude en Tiempo Real")
 
@@ -103,7 +128,8 @@ if archivo_subido is not None:
             # Paso D: Alineación
             df_final = alinear_columnas(df_trans)
             
-            transaccion = df_final.iloc[0].to_dict()
+            # Convertir a dict con validación de tipos
+            transaccion = convertir_a_dict_valido(df_final.iloc[0])
             
             # --- 2. ENVIAMOS A RENDER ---
             try:
