@@ -16,10 +16,10 @@ load_dotenv()
 # Configurar URL según el ambiente
 API_KEY = os.getenv("API_KEY", "")
 API_URL_DEV = "http://localhost:8001/predecir"
-API_URL_PROD = "https://gestion-datos-ev1.onrender.com/predecir"
+API_URL_PROD = "http://localhost:8001/predecir"  # En Render, ambos están en el mismo contenedor
 
-# Usar producción si API_KEY está configurada, sino desarrollo
-API_URL = API_URL_PROD if API_KEY else API_URL_DEV
+# Usar la misma URL en ambos ambientes (mismo contenedor)
+API_URL = API_URL_PROD
 
 # Headers para autenticación
 def obtener_headers():
