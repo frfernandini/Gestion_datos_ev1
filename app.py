@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body, Depends, Header
+from fastapi import FastAPI, HTTPException, Body, Depends, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import pandas as pd
@@ -116,6 +116,7 @@ except Exception as e:
 @app.post("/predecir")
 @limiter.limit("5/minute")
 def predecir_fraude(
+    request: Request,
     datos_transaccion: TransaccionPredecir,
     _auth: bool = Depends(verificar_api_key)
 ):
