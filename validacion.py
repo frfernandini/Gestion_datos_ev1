@@ -1,6 +1,6 @@
 import os
 
-# ⚠️ LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
+# [WARNING] LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
 os.environ['OMP_NUM_THREADS'] = '2'
 os.environ['OPENBLAS_NUM_THREADS'] = '2'
 os.environ['MKL_NUM_THREADS'] = '2'
@@ -37,17 +37,17 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
     columnas_faltantes_nucleos = [col for col in columnas_nucleos if col not in df_valido.columns]
     
     if columnas_faltantes_nucleos:
-        logger.error(f"❌ Faltan columnas NÚCLEO: {columnas_faltantes_nucleos}")
+        logger.error(f"[ERROR] Faltan columnas NÚCLEO: {columnas_faltantes_nucleos}")
         raise ValueError(f"Dataset incompleto. Faltan columnas críticas: {columnas_faltantes_nucleos}")
     else:
-        logger.info(f"✅ Columnas NÚCLEO validadas ({len(columnas_nucleos)} presentes)")
+        logger.info(f"[OK] Columnas NÚCLEO validadas ({len(columnas_nucleos)} presentes)")
     
     # Verificar categorías (solo las que existan en este batch)
     categorias_presentes = [col for col in columnas_categorias_posibles if col in df_valido.columns]
     if categorias_presentes:
-        logger.info(f"✅ Categorías encontradas: {len(categorias_presentes)} de {len(columnas_categorias_posibles)}")
+        logger.info(f"[OK] Categorías encontradas: {len(categorias_presentes)} de {len(columnas_categorias_posibles)}")
     else:
-        logger.warning(f"⚠️  No se encontraron columnas de categorías en este batch")
+        logger.warning(f"[WARNING] No se encontraron columnas de categorías en este batch")
     
     # Validar que no haya valores nulos en columnas críticas
     logger.info("Verificando valores nulos en columnas críticas...")
@@ -57,7 +57,7 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
         if col in df_valido.columns:
             nulos = df_valido[col].isna().sum()
             if nulos > 0:
-                logger.warning(f"⚠️  {nulos} valores nulos en columna '{col}'. Se eliminarán esas filas.")
+                logger.warning(f"[WARNING] {nulos} valores nulos en columna '{col}'. Se eliminarán esas filas.")
                 df_valido = df_valido[df_valido[col].notna()]
     
     # Validar rangos de valores
@@ -76,7 +76,7 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
             mask_invalido = ~validacion(df_valido[col])
             filas_invalidas = mask_invalido.sum()
             if filas_invalidas > 0:
-                logger.warning(f"⚠️  {filas_invalidas} filas inválidas en '{col}': {msg}")
+                logger.warning(f"[WARNING] {filas_invalidas} filas inválidas en '{col}': {msg}")
                 df_valido = df_valido[~mask_invalido]
                 filas_descartadas += filas_invalidas
     
@@ -85,8 +85,8 @@ def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
     
     # Validar que no esté vacío
     if df_valido.empty:
-        logger.error("❌ CRÍTICO: Dataset vacío después de validación")
+        logger.error("[ERROR] CRÍTICO: Dataset vacío después de validación")
         raise ValueError("Dataset está vacío después de validación")
     
-    logger.info(f"✅ Validación completada. {len(df_valido)} filas listas para carga a BD.")
+    logger.info(f"[OK] Validación completada. {len(df_valido)} filas listas para carga a BD.")
     return df_valido

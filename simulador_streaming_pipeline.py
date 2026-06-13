@@ -1,6 +1,6 @@
 import os
 
-# ⚠️ LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
+# [WARNING] LIMITAR CPU - Establecer threads ANTES de importar numpy/pandas
 os.environ['OMP_NUM_THREADS'] = '2'
 os.environ['OPENBLAS_NUM_THREADS'] = '2'
 os.environ['MKL_NUM_THREADS'] = '2'
@@ -162,7 +162,7 @@ if archivo_subido is not None:
                 )
                 if res.status_code == 200:
                     data_api = res.json()
-                    estado = "🚨 FRAUDE" if data_api["es_fraude"] else "✅ OK"
+                    estado = "[ALERT] FRAUDE" if data_api["es_fraude"] else "[OK] OK"
                     
                     st.session_state.total_transacciones += 1
                     if data_api["es_fraude"]:
@@ -185,7 +185,7 @@ if archivo_subido is not None:
                         st.session_state.historial.pop()
                 else:
                     # Mostrar error completo
-                    st.error(f"❌ Error {res.status_code} desde la API.")
+                    st.error(f"[ERROR] Error {res.status_code} desde la API.")
                     st.error(f"Response: {res.text}")  # Mostrar el response completo
                     st.write(f"DEBUG - Headers enviados: {obtener_headers()}")
                     st.write(f"DEBUG - Status code: {res.status_code}")

@@ -10,6 +10,7 @@ __pycache__/
 *$py.class
 
 # Datos generados por el pipeline (no deben ir al repo)
+datos_preprocesados.parquet
 datos_preprocesados.csv
 datos_rechazados.csv
 02_fraudTest.csv

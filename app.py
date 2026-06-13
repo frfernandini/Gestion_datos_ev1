@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# ⚠️ LIMITAR CPU - Establecer threads antes de importar numpy/pandas
+# [WARNING] LIMITAR CPU - Establecer threads antes de importar numpy/pandas
 os.environ['OMP_NUM_THREADS'] = '2'
 os.environ['OPENBLAS_NUM_THREADS'] = '2'
 os.environ['MKL_NUM_THREADS'] = '2'
@@ -38,7 +38,7 @@ def mask_credential(value: str, show_chars: int = 5) -> str:
 def validar_integridad_modelo(ruta: str) -> bool:
     """Verifica que el archivo del modelo sea válido y no corrupto"""
     if not os.path.exists(ruta):
-        logger.error(f"❌ CRÍTICO: Modelo no encontrado en {ruta}")
+        logger.error(f"[ERROR] CRÍTICO: Modelo no encontrado en {ruta}")
         return False
     
     try:
@@ -47,21 +47,21 @@ def validar_integridad_modelo(ruta: str) -> bool:
         
         # Verificar que tenga el método predict
         if not hasattr(modelo_test, 'predict'):
-            logger.error(f"❌ CRÍTICO: Modelo no tiene método 'predict'")
+            logger.error(f"[ERROR] CRÍTICO: Modelo no tiene método 'predict'")
             return False
         
-        logger.info(f"✅ Modelo validado correctamente: {type(modelo_test).__name__}")
+        logger.info(f"[OK] Modelo validado correctamente: {type(modelo_test).__name__}")
         return True
     except Exception as e:
-        logger.error(f"❌ CRÍTICO: Error al validar modelo: {e}")
+        logger.error(f"[ERROR] CRÍTICO: Error al validar modelo: {e}")
         return False
 
 # Cargar clave API desde variables de entorno
 API_KEY = os.getenv("API_KEY")
 if not API_KEY:
-    logger.warning("⚠️ API_KEY no configurada en variables de entorno - autenticación deshabilitada")
+    logger.warning("[WARNING] API_KEY no configurada en variables de entorno - autenticación deshabilitada")
 else:
-    logger.info(f"✅ API_KEY cargada: {mask_credential(API_KEY)}")  # Masked para seguridad
+    logger.info(f"[OK] API_KEY cargada: {mask_credential(API_KEY)}")  # Masked para seguridad
 
 # Configurar rate limiting (5 requests por minuto por IP)
 limiter = Limiter(key_func=get_remote_address)
@@ -101,21 +101,21 @@ def verificar_api_key(authorization: str = Header(None)):
         return True
     
     if not authorization:
-        logger.warning("⚠️ SEGURIDAD: Sin Authorization header")
+        logger.warning("[WARNING] SEGURIDAD: Sin Authorization header")
         raise HTTPException(status_code=401, detail="Authorization header faltante")
     
     # Esperar formato: "Bearer tu_clave_api"
     partes = authorization.split(" ")
     if len(partes) != 2 or partes[0] != "Bearer":
-        logger.warning(f"⚠️ SEGURIDAD: Formato de Authorization inválido")
+        logger.warning(f"[WARNING] SEGURIDAD: Formato de Authorization inválido")
         raise HTTPException(status_code=401, detail="Formato de Authorization inválido. Usa: Bearer <API_KEY>")
     
     token = partes[1]
     if token != API_KEY:
-        logger.error(f"❌ SEGURIDAD: Token incorrecto. Recibido: {mask_credential(token)} | Esperado: {mask_credential(API_KEY)}")
+        logger.error(f"[ERROR] SEGURIDAD: Token incorrecto. Recibido: {mask_credential(token)} | Esperado: {mask_credential(API_KEY)}")
         raise HTTPException(status_code=403, detail="Clave API inválida")
     
-    logger.info("✅ Autenticación exitosa")
+    logger.info("[OK] Autenticación exitosa")
     return True
 
 # 1. Inicializar la aplicación FastAPI
@@ -141,7 +141,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-logger.info(f"✅ CORS configurado para: {ALLOWED_ORIGINS}")
+logger.info(f"[OK] CORS configurado para: {ALLOWED_ORIGINS}")
 
 # ============ HEADERS DE SEGURIDAD ============
 # Middleware que agrega headers de seguridad a todas las responses
@@ -168,7 +168,7 @@ async def add_security_headers(request: Request, call_next):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     """Retorna error genérico de validación sin exponer detalles internos"""
-    logger.error(f"❌ Error de validación: {len(exc.errors())} campo(s) inválido(s)")
+    logger.error(f"[ERROR] Error de validación: {len(exc.errors())} campo(s) inválido(s)")
     # No mostrar detalles específicos en producción
     return JSONResponse(
         status_code=422,
@@ -179,7 +179,7 @@ async def validation_exception_handler(request, exc):
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exception_handler(request, exc):
     """Retorna error 429 cuando se supera el rate limit"""
-    logger.warning(f"⚠️ Rate limit excedido para IP: {request.client.host}")
+    logger.warning(f"[WARNING] Rate limit excedido para IP: {request.client.host}")
     return JSONResponse(
         status_code=429,
         content={"detail": "Demasiadas solicitudes. Límite: 20 por minuto por IP"}
@@ -195,12 +195,12 @@ modelo = None
 if validar_integridad_modelo(MODELO_PATH):
     try:
         modelo = joblib.load(MODELO_PATH)
-        logger.info(f"✅ Modelo cargado exitosamente: {type(modelo).__name__}")
+        logger.info(f"[OK] Modelo cargado exitosamente: {type(modelo).__name__}")
     except Exception as e:
-        logger.error(f"❌ CRÍTICO: Error al cargar modelo validado: {e}")
+        logger.error(f"[ERROR] CRÍTICO: Error al cargar modelo validado: {e}")
         modelo = None
 else:
-    logger.error(f"❌ CRÍTICO: Validación de integridad del modelo FALLÓ")
+    logger.error(f"[ERROR] CRÍTICO: Validación de integridad del modelo FALLÓ")
     modelo = None
 
 # 3. Crear el endpoint (URL) para hacer predicciones
@@ -222,11 +222,11 @@ def predecir_fraude(
     """
     
     if modelo is None:
-        logger.error(f"❌ CRÍTICO: Modelo no disponible para request desde {request.client.host}")
+        logger.error(f"[ERROR] CRÍTICO: Modelo no disponible para request desde {request.client.host}")
         raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible. Intenta más tarde.")
     
     try:
-        logger.info(f"✅ Predicción solicitada desde IP: {request.client.host}")
+        logger.info(f"[OK] Predicción solicitada desde IP: {request.client.host}")
         
         # Convertir el modelo Pydantic a diccionario y luego a DataFrame
         datos_dict = datos_transaccion.dict()
@@ -241,7 +241,7 @@ def predecir_fraude(
         resultado = int(prediccion[0])
         es_fraude = bool(resultado == 1)
         
-        logger.info(f"✅ Predicción completada: Fraude={es_fraude}")
+        logger.info(f"[OK] Predicción completada: Fraude={es_fraude}")
         
         return {
             "estado": "éxito",
@@ -251,12 +251,12 @@ def predecir_fraude(
         
     except ValueError as e:
         # Error en conversión de tipos
-        logger.error(f"❌ Error de tipo en predicción: {str(e)}")
+        logger.error(f"[ERROR] Error de tipo en predicción: {str(e)}")
         raise HTTPException(status_code=400, detail="Formato de datos inválido.")
     except Exception as e:
         # Error interno - NO exponer detalles
         import traceback
-        logger.error(f"❌ ERROR INTERNO en predicción")
+        logger.error(f"[ERROR] ERROR INTERNO en predicción")
         logger.error(f"Traceback: {traceback.format_exc()}")
         # Devolver error genérico sin detalles
         raise HTTPException(status_code=500, detail="Error al procesar la solicitud. Contacta al administrador.")
