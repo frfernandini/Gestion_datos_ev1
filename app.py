@@ -143,14 +143,36 @@ app.add_middleware(
 
 logger.info(f"✅ CORS configurado para: {ALLOWED_ORIGINS}")
 
+# ============ HEADERS DE SEGURIDAD ============
+# Middleware que agrega headers de seguridad a todas las responses
+from fastapi import Request
+from fastapi.responses import Response
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Agrega headers de seguridad HTTP a todas las respuestas"""
+    response = await call_next(request)
+    
+    # Headers de seguridad
+    response.headers["X-Content-Type-Options"] = "nosniff"  # Prevenir MIME type sniffing
+    response.headers["X-Frame-Options"] = "DENY"  # Prevenir clickjacking
+    response.headers["X-XSS-Protection"] = "1; mode=block"  # XSS protection
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"  # HSTS
+    response.headers["Content-Security-Policy"] = "default-src 'none'"  # CSP restrictivo
+    
+    return response
+
+# ============ MANEJADORES DE EXCEPCIONES ============
+
 # Manejador personalizado para errores de validación (422)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    """Retorna detalles completos de errores de validación"""
-    logger.error(f"Error de validación: {exc.errors()}")
+    """Retorna error genérico de validación sin exponer detalles internos"""
+    logger.error(f"❌ Error de validación: {len(exc.errors())} campo(s) inválido(s)")
+    # No mostrar detalles específicos en producción
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body if hasattr(exc, 'body') else None}
+        content={"detail": "Los datos proporcionados no son válidos. Verifica el formato de tu solicitud."}
     )
 
 # Manejador personalizado para rate limit exceeded (429)
@@ -200,27 +222,26 @@ def predecir_fraude(
     """
     
     if modelo is None:
-        raise HTTPException(status_code=500, detail="El modelo no está disponible.")
+        logger.error(f"❌ CRÍTICO: Modelo no disponible para request desde {request.client.host}")
+        raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible. Intenta más tarde.")
     
     try:
-        logger.info(f"Predicción solicitada desde IP: {request.client.host}")
+        logger.info(f"✅ Predicción solicitada desde IP: {request.client.host}")
         
         # Convertir el modelo Pydantic a diccionario y luego a DataFrame
         datos_dict = datos_transaccion.dict()
-        logger.debug(f"Datos recibidos: {datos_dict}")
+        logger.debug(f"Datos validados por Pydantic: {list(datos_dict.keys())}")
         
         df_nueva_transaccion = pd.DataFrame([datos_dict])
-        logger.debug(f"DataFrame creado con shape: {df_nueva_transaccion.shape}")
         
         # Realizar la predicción
         prediccion = modelo.predict(df_nueva_transaccion)
-        logger.debug(f"Predicción realizada: {prediccion}")
         
         # Extraer el resultado (0 o 1)
         resultado = int(prediccion[0])
         es_fraude = bool(resultado == 1)
         
-        logger.info(f"Predicción exitosa: Fraude={es_fraude}")
+        logger.info(f"✅ Predicción completada: Fraude={es_fraude}")
         
         return {
             "estado": "éxito",
@@ -228,8 +249,14 @@ def predecir_fraude(
             "codigo_prediccion": resultado
         }
         
+    except ValueError as e:
+        # Error en conversión de tipos
+        logger.error(f"❌ Error de tipo en predicción: {str(e)}")
+        raise HTTPException(status_code=400, detail="Formato de datos inválido.")
     except Exception as e:
+        # Error interno - NO exponer detalles
         import traceback
-        logger.error(f"❌ ERROR en predicción: {str(e)}")
-        logger.error(f"Traceback completo: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        logger.error(f"❌ ERROR INTERNO en predicción")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Devolver error genérico sin detalles
+        raise HTTPException(status_code=500, detail="Error al procesar la solicitud. Contacta al administrador.")
