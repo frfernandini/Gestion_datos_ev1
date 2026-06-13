@@ -3,14 +3,31 @@ import pandas as pd
 import requests
 import time
 import random
-
+import os
+from dotenv import load_dotenv
 
 from validacion import validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
+# Cargar variables de entorno
+load_dotenv()
 
-API_URL = "http://localhost:8001/predecir"
+# Configurar URL según el ambiente
+API_KEY = os.getenv("API_KEY", "")
+API_URL_DEV = "http://localhost:8001/predecir"
+API_URL_PROD = "https://gestion-datos-ev1.onrender.com/predecir"
+
+# Usar producción si API_KEY está configurada, sino desarrollo
+API_URL = API_URL_PROD if API_KEY else API_URL_DEV
+
+# Headers para autenticación
+def obtener_headers():
+    """Retorna headers con autenticación si está configurada"""
+    headers = {"Content-Type": "application/json"}
+    if API_KEY:
+        headers["Authorization"] = f"Bearer {API_KEY}"
+    return headers
 
 
 COLUMNAS_ESPERADAS = [
@@ -90,7 +107,12 @@ if archivo_subido is not None:
             
             # --- 2. ENVIAMOS A RENDER ---
             try:
-                res = requests.post(API_URL, json=transaccion, timeout=30)
+                res = requests.post(
+                    API_URL, 
+                    json=transaccion, 
+                    timeout=30,
+                    headers=obtener_headers()
+                )
                 if res.status_code == 200:
                     data_api = res.json()
                     estado = "🚨 FRAUDE" if data_api["es_fraude"] else "✅ OK"
