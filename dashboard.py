@@ -314,7 +314,23 @@ def generar_predicciones(df: pd.DataFrame):
 
     try:
         y_true = df['is_fraud'].astype(int).values
-        y_pred = modelo.predict(preparar_features(df)).astype(int)
+        df_features = preparar_features(df)
+        
+        # Logging para diagnóstico
+        fraudes_reales = y_true.sum()
+        total = len(y_true)
+        logger.info(f"[DEBUG] Distribución real: {fraudes_reales} fraudes de {total} ({fraudes_reales/total*100:.2f}%)")
+        
+        y_pred = modelo.predict(df_features).astype(int)
+        fraudes_predichos = y_pred.sum()
+        logger.info(f"[DEBUG] Distribución predicha: {fraudes_predichos} fraudes de {total} ({fraudes_predichos/total*100:.2f}%)")
+        
+        # Verificar probabilidades si el modelo las soporta
+        if hasattr(modelo, 'predict_proba'):
+            y_proba = modelo.predict_proba(df_features)[:, 1]
+            logger.info(f"[DEBUG] Probabilidades - Min: {y_proba.min():.4f}, Max: {y_proba.max():.4f}, Mean: {y_proba.mean():.4f}")
+            logger.info(f"[DEBUG] Probabilidades > 0.5: {(y_proba > 0.5).sum()} de {len(y_proba)}")
+        
         return y_true, y_pred
     except Exception as e:
         logger.warning(f"[WARNING] Error generando predicciones: {e}")
