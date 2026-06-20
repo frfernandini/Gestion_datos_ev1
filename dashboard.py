@@ -127,6 +127,18 @@ def get_db_connection():
         DB_PORT = os.getenv("DB_PORT", "5432")
         DB_NAME = os.getenv("DB_NAME", "postgres")
         
+        # Debug: Mostrar valores (sin password)
+        logger.info(f"[DEBUG] Variables de entorno:")
+        logger.info(f"  DB_USER: {DB_USER}")
+        logger.info(f"  DB_HOST: {DB_HOST}")
+        logger.info(f"  DB_PORT: {DB_PORT}")
+        logger.info(f"  DB_NAME: {DB_NAME}")
+        logger.info(f"  DB_PASSWORD: {'***' if DB_PASSWORD else 'MISSING'}")
+        
+        if not all([DB_USER, DB_PASSWORD, DB_HOST]):
+            logger.error("[ERROR] Faltan variables de entorno requeridas")
+            return None
+        
         URL_SUPABASE = (
             f"postgresql://"
             f"{quote(DB_USER, safe='')}:"
@@ -135,11 +147,19 @@ def get_db_connection():
             f"?sslmode=require"
         )
         
+        logger.info(f"[DEBUG] URL construida (oculta): postgresql://{DB_USER}:***@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require")
+        
         engine = create_engine(URL_SUPABASE)
+        
+        # Probar conexión
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        
         logger.info("[OK] Conexión a Supabase exitosa")
         return engine
     except Exception as e:
         logger.error(f"[ERROR] No se pudo conectar a Supabase: {e}")
+        logger.error(f"[ERROR] Tipo de error: {type(e).__name__}")
         return None
 
 # ==========================================
@@ -151,9 +171,28 @@ def cargar_datos_predicciones():
     """Carga las predicciones desde Supabase"""
     engine = get_db_connection()
     if engine is None:
+        logger.error("[ERROR] Engine es None - no se pudo conectar a BD")
         return pd.DataFrame()
     
     try:
+        # Primero verificar si la tabla existe
+        query_check = """
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'transacciones_ml_procesadas'
+        """
+        with engine.connect() as conn:
+            result = conn.execute(text(query_check))
+            table_exists = result.fetchone()
+            
+        if not table_exists:
+            logger.error("[ERROR] La tabla 'transacciones_ml_procesadas' NO existe en la base de datos")
+            logger.error("[INFO] Ejecuta el pipeline (main.py) para crear la tabla y cargar datos")
+            return pd.DataFrame()
+        
+        logger.info("[OK] Tabla 'transacciones_ml_procesadas' existe")
+        
         query = """
             SELECT * FROM transacciones_ml_procesadas 
             ORDER BY unix_time DESC 
@@ -164,6 +203,7 @@ def cargar_datos_predicciones():
         return df
     except Exception as e:
         logger.error(f"[ERROR] Error cargando predicciones: {e}")
+        logger.error(f"[ERROR] Tipo de error: {type(e).__name__}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=300)
