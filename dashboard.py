@@ -801,17 +801,17 @@ def main():
     st.sidebar.title("[DASHBOARD] Menú Principal")
     st.sidebar.markdown("---")
     
-        página = st.sidebar.radio(
-        "[SELECT] Selecciona una página:",
-        [
-            "[HOME] Overview",
-            "[HEATMAP] Matriz de Confusión",
-            "[TABLE] Tabla de Errores",
-            "[TREND] Histórico",
-            "[FLOW] Volumen Pipeline",
-            "[DEMO] Simulador Streaming"
-        ],
-        index=0
+    página = st.sidebar.radio(
+    "[SELECT] Selecciona una página:",
+    [
+    "[HOME] Overview",
+        "[HEATMAP] Matriz de Confusión",
+        "[TABLE] Tabla de Errores",
+        "[TREND] Histórico",
+        "[FLOW] Volumen Pipeline",
+        "[DEMO] Simulador Streaming"
+    ],
+    index=0
     )
 
     
@@ -839,7 +839,7 @@ def main():
         page_errores()
     elif página == "[TREND] Histórico":
         page_historico()
-        elif página == "[FLOW] Volumen Pipeline":
+    elif página == "[FLOW] Volumen Pipeline":
         page_volumen()
     elif página == "[DEMO] Simulador Streaming":
         page_simulador()
