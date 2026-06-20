@@ -209,6 +209,16 @@ def cargar_datos_predicciones():
         """
         df = pd.read_sql(query, engine)
         logger.info(f"[OK] Cargadas {len(df)} predicciones desde BD")
+        
+        # Convertir tipos de datos incorrectos (object a int)
+        columnas_a_convertir = ['flag_invalid_amt', 'flag_fake_location', 'gender', 'city_pop', 
+                                'unix_time', 'trans_hour', 'trans_day_of_week', 'trans_month', 'age']
+        for col in columnas_a_convertir:
+            if col in df.columns:
+                if df[col].dtype == 'object':
+                    logger.info(f"[FIX] Convirtiendo columna {col} de object a int")
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+        
         return df
     except Exception as e:
         logger.error(f"[ERROR] Error cargando predicciones: {e}")
