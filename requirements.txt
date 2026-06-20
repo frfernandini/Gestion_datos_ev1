@@ -13,3 +13,4 @@ psutil==5.9.6
 slowapi==0.1.9
 pydantic==2.5.0
 sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
