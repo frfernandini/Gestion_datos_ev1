@@ -92,6 +92,15 @@ def alinear_columnas_simulador(df_transformado: pd.DataFrame) -> pd.DataFrame:
     for col in COLUMNAS_SIMULADOR:
         if col not in df_transformado.columns:
             df_transformado[col] = 0
+        # Forzar tipo int para columnas que deben ser int
+        if col in ['gender', 'city_pop', 'unix_time', 'flag_invalid_amt', 'flag_fake_location',
+                   'trans_hour', 'trans_day_of_week', 'trans_month', 'age',
+                   'category_food_dining', 'category_gas_transport', 'category_grocery_net',
+                   'category_grocery_pos', 'category_health_fitness', 'category_home',
+                   'category_kids_pets', 'category_misc_net', 'category_misc_pos',
+                   'category_personal_care', 'category_shopping_net', 'category_shopping_pos',
+                   'category_travel']:
+            df_transformado[col] = df_transformado[col].astype(int)
     return df_transformado[COLUMNAS_SIMULADOR]
 
 def convertir_a_dict_valido(fila_series: pd.Series) -> dict:
