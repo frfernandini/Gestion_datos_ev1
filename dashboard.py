@@ -474,18 +474,16 @@ def page_overview():
         st.plotly_chart(fig_pie, use_container_width=True)
     
     with col2:
-        st.subheader("[CHART] Monto Promedio por Género")
-        if 'gender' in df.columns and 'amt' in df.columns:
-            monto_promedio = df.groupby('gender')['amt'].mean()
-            etiquetas_genero = {0: 'Femenino', 1: 'Masculino'}
+        st.subheader("[CHART] Distribución por Hora del Día")
+        if 'trans_hour' in df.columns:
+            hora_dist = df['trans_hour'].value_counts().sort_index()
             fig_bar = px.bar(
-                x=[etiquetas_genero.get(k, str(k)) for k in monto_promedio.index],
-                y=monto_promedio.values,
-                color_discrete_sequence=['#3498db', '#e74c3c'],
-                text=[f"${v:.2f}" for v in monto_promedio.values]
+                x=hora_dist.index,
+                y=hora_dist.values,
+                labels={'x': 'Hora', 'y': 'Cantidad'},
+                color_discrete_sequence=['#3498db']
             )
-            fig_bar.update_traces(textposition='outside')
-            fig_bar.update_layout(showlegend=False, xaxis_title="Género", yaxis_title="Monto Promedio ($)")
+            fig_bar.update_layout(showlegend=False, xaxis_title="Hora (0-23)", yaxis_title="Cantidad")
             st.plotly_chart(fig_bar, use_container_width=True)
 
 # ==========================================
