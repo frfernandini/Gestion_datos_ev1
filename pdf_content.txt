@@ -1,0 +1,308 @@
+--- Page 1 ---
+Actividad 3.4
+• Visualización e integración del 
+sistema--- Page 2 ---
+01 Objetivo de 
+la actividad--- Page 3 ---
+• Objetivo de la actividad
+En esta actividad aprenderás a visualizar los resultados generados por tu pipeline y 
+modelo de IA, integrando estos resultados en herramientas que permitan una 
+interpretación clara y útil para la toma de decisiones. Al finalizar, deberás:
+• Configurar herramientas de visualización para mostrar los resultados de tu pipeline.
+• Integrar el pipeline con dashboards, APIs o aplicaciones que consuman los resultados 
+procesados.
+• Validar que la información sea clara, coherente y se actualice correctamente.
+• Presentar visualizaciones que expliquen el funcionamiento y resultados del modelo IA.--- Page 4 ---
+02 Introducción y 
+desarrollo--- Page 5 ---
+Introducción
+No basta con entrenar un modelo de IA y obtener resultados: ¡es 
+necesario que esos resultados puedan ser interpretados y utilizados por 
+quienes toman decisiones.
+La visualización de datos permite:
+• Mostrar los resultados del modelo de manera comprensible.
+• Identificar patrones y tendencias clave.
+• Facilitar la toma de decisiones basada en datos.
+La integración del pipeline con otras herramientas o aplicaciones permite 
+automatizar el flujo desde la ingesta de datos hasta la visualización final, 
+creando un sistema cohesionado y reutilizable.--- Page 6 ---
+Conceptos clave de visualización y integración
+Visualización de resultados
+• Dashboards: permiten mostrar visualizaciones interactivas (ej.: Power 
+BI, Tableau, Grafana, Streamlit).
+• Gráficos estáticos: generados con librerías como Matplotlib, Seaborn, 
+Plotly.
+• Tablas de resultados: muestran salidas clave del modelo de IA 
+(predicciones, puntuaciones).
+• Indicadores clave (KPIs): resumen de métricas relevantes (precisión, 
+recall, tiempos de ejecución, etc.).--- Page 7 ---
+Conceptos clave de visualización y integración
+Integración del pipeline
+• APIs REST: permiten exponer resultados del modelo a través de 
+endpoints.
+• Scripts automatizados: que cargan datos, ejecutan el pipeline y 
+actualizan los dashboards.
+• Bases de datos: donde se almacenan los resultados para su consumo 
+por otras aplicaciones.--- Page 8 ---
+¿Cómo conectar el pipeline, los resultados y el 
+dashboard?
+Flujo más utilizado:
+• El pipeline procesa datos → genera resultados del modelo IA.
+• Los resultados se almacenan en una BD o API REST.
+• El dashboard se conecta a esta fuente → muestra los resultados 
+actualizados automáticamente.--- Page 9 ---
+¿Cómo conectar el pipeline, los resultados y el 
+dashboard?
+¿Por qué así?
+• Evitas tener que exportar manualmente archivos.
+• Permites que el pipeline y el dashboard estén integrados y sean 
+reutilizables.
+• Aseguras que siempre se vean los datos más recientes.--- Page 10 ---
+¿Qué visualización usar según el tipo de modelo?
+Salida del modelo Visualización recomendada ¿Qué muestra?
+Matriz de confusión Heatmap (mapa de calor) Aciertos y errores del modelo
+Accuracy, Recall, F1 Indicadores numéricos / 
+barras Calidad del modelo
+Distribución de clases Barras / Pie chart Predicciones por categoría
+Cambios en el tiempo Líneas / Áreas Evolución del rendimiento
+Casos erróneos Tabla filtrable Análisis de errores 
+específicos
+Volumen de datos procesados Barras / KPI Flujo del pipeline--- Page 11 ---
+¿Qué visualización usar según el tipo de modelo?
+1.- Heatmap (mapa de calor)
+Un heatmap es una representación gráfica de datos que usa 
+colores para indicar valores numéricos dentro de una matriz o 
+tabla.
+En IA, se usa principalmente para visualizar matrices de 
+confusión, donde:
+Cada celda muestra el número de aciertos o errores entre clases.
+Los colores indican la magnitud del valor: mientras más intenso 
+el color, mayor el valor.--- Page 12 ---
+¿Qué visualización usar según el tipo de modelo?
+1.- Heatmap (mapa de calor)
+¿Por qué se usa?
+Porque permite ver visualmente qué clases el modelo predice bien 
+(celdas diagonales) y dónde se equivoca (celdas fuera de la 
+diagonal).
+Ayuda a detectar errores recurrentes en categorías específicas.--- Page 13 ---
+¿Qué visualización usar según el tipo de modelo?
+1.- Heatmap (mapa de calor)
+Ejemplo práctico:
+En el heatmap, las celdas con 90, 85 y 88 se verán con colores más intensos, 
+mostrando que el modelo acierta bien allí.
+Real / Predicho Clase A Clase B Clase C
+Clase A 90 3 2
+Clase B 5 85 7
+Clase C 1 8 88--- Page 14 ---
+¿Qué visualización usar según el tipo de modelo?
+2.- Indicadores numéricos / barras
+Un indicador numérico (KPI) es una visualización que destaca un 
+único valor clave.
+Un gráfico de barras compara distintos valores mediante columnas 
+verticales u horizontales.--- Page 15 ---
+¿Qué visualización usar según el tipo de modelo?
+2.- Indicadores numéricos / barras
+¿Cuándo usarlo?
+Cuando quieres mostrar las métricas clave del modelo, como:
+• Accuracy
+• Recall
+• F1-score
+• Tiempo de ejecución--- Page 16 ---
+¿Qué visualización usar según el tipo de modelo?
+2.- Indicadores numéricos / barras
+¿Por qué se usa?
+Porque permite que de un solo vistazo puedas saber si el modelo está 
+funcionando bien o mal.
+Las barras permiten comparar varias métricas entre sí.--- Page 17 ---
+¿Qué visualización usar según el tipo de modelo?
+2.- Indicadores numéricos / barras
+Ejemplo:
+En el dashboard, puedes mostrar:
+• Un KPI grande que diga: “Accuracy: 94%”
+• Y un gráfico de barras con los tres valores.
+Métrica Valor (%)
+Accuracy 94
+Recall 89
+F1-Score 91--- Page 18 ---
+¿Qué visualización usar según el tipo de modelo?
+3.- Barras / Pie chart (gráfico circular)
+¿Qué es?
+Gráfico de barras: muestra el número de predicciones hechas para cada 
+categoría.
+Pie chart: representa los mismos datos, pero como porcentaje del total, en 
+forma de círculo dividido.--- Page 19 ---
+¿Qué visualización usar según el tipo de modelo?
+3.- Barras / Pie chart (gráfico circular)
+¿Cuándo usarlo?
+Cuando quieres visualizar cómo se distribuyen las predicciones por 
+categoría:
+¿Predijo más Clase A, B o C?
+¿Por qué se usa?
+Porque ayuda a detectar desequilibrios en las predicciones, por ejemplo:
+Si el modelo predice mucho más una clase que las otras, puede estar 
+sesgado.--- Page 20 ---
+¿Qué visualización usar según el tipo de modelo?
+3.- Barras / Pie chart (gráfico circular)
+Ejemplo:
+Un gráfico de barras o pie chart mostraría claramente que la Clase A es la 
+que más predice el modelo.
+Clase N° de predicciones
+A 700
+B 200
+C 100--- Page 21 ---
+¿Qué visualización usar según el tipo de modelo?
+4.- Líneas / Áreas
+¿Qué es?
+Gráfico de líneas: conecta los valores históricos de una métrica.
+Área: rellena el espacio bajo la línea para enfatizar el volumen.--- Page 22 ---
+¿Qué visualización usar según el tipo de modelo?
+4.- Líneas / Áreas
+¿Cuándo usarlo?
+Cuando quieres mostrar cómo ha evolucionado el rendimiento del 
+modelo a lo largo del tiempo, por ejemplo:
+• Accuracy por versión del modelo.
+• Volumen de datos procesados por día.
+¿Por qué se usa?
+Porque permite detectar tendencias: mejoras, caídas o estabilización del 
+modelo.--- Page 23 ---
+¿Qué visualización usar según el tipo de modelo?
+4.- Líneas / Áreas
+Ejemplo:
+Una línea creciente muestra claramente la mejora del modelo con el tiempo.
+Fecha Accuracy (%)
+Día 1 85
+Día 2 89
+Día 3 91
+Día 4 94--- Page 24 ---
+¿Qué visualización usar según el tipo de modelo?
+5.- Tabla filtrable
+¿Qué es?
+Una tabla dinámica que permite filtrar, ordenar y buscar registros.
+Por ejemplo, los errores cometidos por el modelo.
+¿Cuándo usarlo?
+Cuando necesitas analizar casos individuales:
+• ¿Qué dato predijo mal el modelo?
+• ¿En qué clase se equivocó?--- Page 25 ---
+¿Qué visualización usar según el tipo de modelo?
+5.- Tabla filtrable
+¿Por qué se usa?
+Porque a veces no basta con los promedios: hay que mirar el detalle de 
+cada error.
+Ejemplo:
+Puedes filtrar solo los que tienen Error = Sí para revisar en detalle.
+ID dato Clase real Predicho Error
+134 B A Sí
+287 C C No
+422 A B Sí--- Page 26 ---
+¿Qué visualización usar según el tipo de modelo?
+6.- Barras / KPI (para volumen de datos)
+¿Qué es?
+KPI: muestra el total de datos procesados por el pipeline.
+Barras: comparan volúmenes procesados por etapa (ingesta, limpieza, 
+modelo, etc.).--- Page 27 ---
+¿Qué visualización usar según el tipo de modelo?
+6.- Barras / KPI (para volumen de datos)
+¿Cuándo usarlo?
+Cuando quieres monitorear el flujo operativo del pipeline:
+• ¿Cuántos datos entraron?
+• ¿Cuántos fueron descartados?
+• ¿Cuántos pasaron al modelo IA?
+¿Por qué se usa?
+Porque permite detectar cuellos de botella o errores operativos (por 
+ejemplo, si hay pocos datos que llegan al final del pipeline).--- Page 28 ---
+¿Qué visualización usar según el tipo de modelo?
+6.- Barras / KPI (para volumen de datos)
+Ejemplo:
+En las barras se vería que en limpieza se pierden algunos datos, y podrías 
+revisar por qué.
+Etapa Registros procesados
+Ingesta 10.000
+Limpieza 9.800
+Modelado 9.750
+Resultado 9.740--- Page 29 ---
+Buenas prácticas y metodologías en dashboards
+Estas son algunas buenas prácticas o metodologías para considerar:
+Data-ink ratio:
+Muestra solo los elementos visuales necesarios; elimina adornos que no 
+aportan información.
+Simplicidad visual:
+Prioriza la claridad y evita colores innecesarios, tipografías complejas o 
+gráficos 3D sin utilidad.
+Diseño iterativo (Design Thinking adaptado a BI):
+Crea un dashboard inicial (MVP), pruébalo con usuarios, y ajusta según 
+feedback.--- Page 30 ---
+03 Trabajo 
+Autónomo--- Page 31 ---
+Trabajo Autónomo
+Actividad Sugerida: 
+Cada estudiante deberá:
+1. Analizar brevemente los resultados del pipeline:
+• Verificar si los resultados son coherentes y si hay datos faltantes o 
+inconsistencias.
+2. Preparar los resultados del pipeline:
+• Ejecutar el pipeline y exportar los resultados del modelo a CSV, 
+JSON o base de datos.--- Page 32 ---
+Trabajo Autónomo
+Actividad Sugerida: 
+Cada estudiante deberá:
+3. Elegir una herramienta de visualización:
+• Power BI, Tableau, Streamlit, Dash, Matplotlib, Plotly u otra similar.
+4. Construir visualizaciones claras y significativas:
+• Gráficos de barras, líneas, tortas, heatmaps.
+• Tablas filtrables.
+• Indicadores clave (KPI).--- Page 33 ---
+Trabajo Autónomo
+Actividad Sugerida: 
+Cada estudiante deberá:
+5. Integrar el pipeline con la herramienta elegida:
+• Leer los resultados automáticamente desde el archivo o base de 
+datos, o a través de una API, para más seguridad.
+6. Documentar el proceso:
+• Explicar qué visualización construyó, por qué, para qué y cómo la 
+integró con su pipeline.--- Page 34 ---
+Trabajo Autónomo
+Actividad Sugerida: 
+Cada estudiante deberá:
+7. Proponer una mejora concreta:
+Sugerir un ajuste al pipeline, visualización o interpretación futura.--- Page 35 ---
+Trabajo Autónomo
+Aspectos a medir durante la actividad: 
+• Claridad de las visualizaciones: ¿comunican bien los resultados del 
+modelo?
+• Coherencia de los datos mostrados.
+• Relevancia de las visualizaciones: ¿son apropiadas para el tipo de 
+dato mostrado?
+• Automatización del flujo: ¿está integrado al pipeline o es manual?--- Page 36 ---
+Trabajo Autónomo
+Aspectos a medir durante la actividad: 
+• Conexión real con el pipeline: ¿lee los resultados automáticamente?
+• Interpretación de los resultados por parte del estudiante.
+• Propuesta de mejora: ¿el análisis llevó a sugerir mejoras concretas al 
+pipeline o modelo?--- Page 37 ---
+04 Cierre--- Page 38 ---
+Cierre
+Cierre y logros alcanzados
+Con esta actividad, lograste integrar tu pipeline en un flujo completo: desde la 
+ingesta y procesamiento de datos hasta la visualización de resultados.
+Aprendiste a utilizar herramientas de visualización que permiten interpretar el 
+funcionamiento del modelo de IA, facilitando que otros puedan usar y 
+comprender su utilidad.--- Page 39 ---
+Cierre
+¿Qué lograste hoy?
+• Comprendiste la importancia de visualizar los resultados del pipeline.
+• Aplicaste herramientas de visualización para mostrar datos clave.
+• Integraste el pipeline con herramientas externas, creando un flujo 
+automatizado.
+• Comunicaste de forma clara los resultados y funcionamiento del modelo IA.--- Page 40 ---
+¿Qué viene después?
+Actividad Final – Proyecto Integrador del pipeline completo
+• Automatizarás todo el flujo (ingesta, procesamiento, entrenamiento, 
+evaluación y visualización).
+• Documentarás el proyecto final.
+• Presentarás una demostración completa de tu pipeline funcionando de 
+principio a fin.--- Page 41 ---
+¿Qué viene después?
+Recuerda:
+Optimizar el rendimiento es importante, pero asegurar el entorno donde corre 
+tu pipeline es esencial para proteger los datos y garantizar que la solución 
+pueda operar de forma segura en ambientes reales.--- Page 42 ---

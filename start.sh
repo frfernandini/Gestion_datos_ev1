@@ -44,6 +44,6 @@ fi
 echo "✅ FastAPI está corriendo (PID: $FASTAPI_PID)"
 ps aux | grep uvicorn
 
-# Iniciar el Dashboard (Streamlit) en el puerto 8000 - esto se queda en foreground
-echo "🎨 Iniciando Streamlit en puerto 8000..."
-exec streamlit run simulador_streaming_pipeline.py --server.port 8000 --server.address 0.0.0.0
+# Iniciar el Dashboard (Streamlit)
+echo "📊 Iniciando Dashboard en puerto ${PORT:-8000}..."
+exec streamlit run dashboard.py --server.port ${PORT:-8000} --server.address 0.0.0.0
