@@ -12,6 +12,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def validar_estructura_csv_crudo(df: pd.DataFrame) -> pd.DataFrame:
+    """Valida la estructura de un CSV crudo ANTES de transformación"""
+    logger.info("Validando estructura de CSV crudo...")
+    
+    # Columnas esperadas en el CSV crudo
+    columnas_crudo = [
+        'trans_date_trans_time', 'cc_num', 'merchant', 'category', 'amt',
+        'first', 'last', 'gender', 'street', 'city', 'state', 'zip',
+        'lat', 'long', 'city_pop', 'job', 'dob', 'trans_num', 'unix_time',
+        'merch_lat', 'merch_long', 'is_fraud'
+    ]
+    
+    columnas_faltantes = [col for col in columnas_crudo if col not in df.columns]
+    
+    if columnas_faltantes:
+        logger.error(f"[ERROR] CSV crudo incompleto. Faltan columnas: {columnas_faltantes}")
+        raise ValueError(f"CSV crudo incompleto. Faltan columnas: {columnas_faltantes}")
+    
+    logger.info(f"[OK] CSV crudo válido ({len(df)} filas)")
+    return df
+
 def validar_estructura_y_semantica(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Iniciando validación de datos transformados (pre-carga)...")
     df_valido = df.copy()

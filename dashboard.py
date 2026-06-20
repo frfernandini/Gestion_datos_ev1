@@ -17,7 +17,7 @@ import time
 import random
 
 # Importar pipeline local
-from validacion import validar_estructura_y_semantica
+from validacion import validar_estructura_csv_crudo, validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
@@ -772,14 +772,25 @@ def page_simulador():
                 
                 # Pipeline local
                 df_evento = pd.DataFrame([fila])
-                df_valido = validar_estructura_y_semantica(df_evento)
-                if df_valido.empty: continue
-                    
-                df_limpio = limpiar_datos(df_valido)
+                
+                # Paso 1: Validar estructura del CSV crudo
+                df_valido_crudo = validar_estructura_csv_crudo(df_evento)
+                if df_valido_crudo.empty: continue
+                
+                # Paso 2: Limpiar datos
+                df_limpio = limpiar_datos(df_valido_crudo)
                 if df_limpio.empty: continue
                     
+                # Paso 3: Transformar datos
                 df_trans = transformar_datos(df_limpio)
-                df_final = alinear_columnas_simulador(df_trans)
+                if df_trans.empty: continue
+                
+                # Paso 4: Validar estructura transformada
+                df_valido = validar_estructura_y_semantica(df_trans)
+                if df_valido.empty: continue
+                
+                # Paso 5: Alinear columnas para el modelo
+                df_final = alinear_columnas_simulador(df_valido)
                 transaccion = convertir_a_dict_valido(df_final.iloc[0])
                 
                 # Enviar a la API local (FastAPI)

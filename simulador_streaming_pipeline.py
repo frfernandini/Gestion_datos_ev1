@@ -13,7 +13,7 @@ import time
 import random
 from dotenv import load_dotenv
 
-from validacion import validar_estructura_y_semantica
+from validacion import validar_estructura_csv_crudo, validar_estructura_y_semantica
 from limpieza import limpiar_datos
 from transformacion import transformar_datos
 
@@ -132,22 +132,30 @@ if archivo_subido is not None:
             # --- 1. PASAMOS LA FILA ÚNICA POR EL PIPELINE ---
             df_evento = pd.DataFrame([fila])
             
-            # Paso A: Validación
-            df_valido = validar_estructura_y_semantica(df_evento)
-            if df_valido.empty:
-                st.warning(f"Fila {index} ignorada por validación.")
+            # Paso A: Validar estructura del CSV crudo
+            df_valido_crudo = validar_estructura_csv_crudo(df_evento)
+            if df_valido_crudo.empty:
+                st.warning(f"Fila {index} ignorada por validación de CSV crudo.")
                 continue
-                
+            
             # Paso B: Limpieza
-            df_limpio = limpiar_datos(df_valido)
+            df_limpio = limpiar_datos(df_valido_crudo)
             if df_limpio.empty:
                 continue
                 
             # Paso C: Transformación
             df_trans = transformar_datos(df_limpio)
+            if df_trans.empty:
+                continue
             
-            # Paso D: Alineación
-            df_final = alinear_columnas(df_trans)
+            # Paso D: Validar estructura transformada
+            df_valido = validar_estructura_y_semantica(df_trans)
+            if df_valido.empty:
+                st.warning(f"Fila {index} ignorada por validación de datos transformados.")
+                continue
+            
+            # Paso E: Alineación
+            df_final = alinear_columnas(df_valido)
             
             # Convertir a dict con validación de tipos
             transaccion = convertir_a_dict_valido(df_final.iloc[0])
