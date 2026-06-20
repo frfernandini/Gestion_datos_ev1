@@ -260,9 +260,18 @@ COLUMNAS_MODELO = [
 @st.cache_resource
 def cargar_modelo():
     """Carga el modelo entrenado desde disco"""
+    logger.info(f"[DEBUG] Buscando modelo en: {MODELO_PATH}")
+    logger.info(f"[DEBUG] Directorio actual: {os.getcwd()}")
+    logger.info(f"[DEBUG] Archivos en directorio actual: {os.listdir('.')[:10]}")  # Primeros 10 archivos
+    
     if not os.path.exists(MODELO_PATH):
         logger.error(f"[ERROR] Modelo no encontrado en {MODELO_PATH}")
+        logger.error(f"[DEBUG] Ruta absoluta: {os.path.abspath(MODELO_PATH)}")
+        # Listar archivos .pkl en el directorio actual
+        pkl_files = [f for f in os.listdir('.') if f.endswith('.pkl')]
+        logger.error(f"[DEBUG] Archivos .pkl encontrados: {pkl_files}")
         return None
+    
     try:
         modelo = joblib.load(MODELO_PATH)
         if not hasattr(modelo, 'predict'):
@@ -272,6 +281,7 @@ def cargar_modelo():
         return modelo
     except Exception as e:
         logger.error(f"[ERROR] Error cargando modelo: {e}")
+        logger.error(f"[ERROR] Tipo de error: {type(e).__name__}")
         return None
 
 def preparar_features(df: pd.DataFrame) -> pd.DataFrame:
